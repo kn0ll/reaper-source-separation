@@ -1,0 +1,130 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+env:
+  ORT_VERSION: "1.19.2"
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            platform: linux-x64
+            ort_asset: onnxruntime-linux-x64-gpu-1.19.2.tgz
+            plugin: reaper_source_separation.so
+          - os: macos-14
+            platform: macos-arm64
+            ort_asset: onnxruntime-osx-arm64-1.19.2.tgz
+            plugin: reaper_source_separation.dylib
+          - os: windows-2022
+            platform: windows-x64
+            ort_asset: onnxruntime-win-x64-gpu-1.19.2.zip
+            plugin: reaper_source_separation.dll
+
+    runs-on: ${{ matrix.os }}
+    name: Build (${{ matrix.platform }})
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Cache ONNX Runtime
+        id: cache-ort
+        uses: actions/cache@v4
+        with:
+          path: ort
+          key: ort-${{ matrix.platform }}-${{ env.ORT_VERSION }}
+
+      - name: Download ONNX Runtime
+        if: steps.cache-ort.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          mkdir -p ort
+          cd ort
+          if [[ "${{ matrix.ort_asset }}" == *.zip ]]; then
+            curl -sL "https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/${{ matrix.ort_asset }}" -o ort.zip
+            unzip -q ort.zip
+            rm ort.zip
+          else
+            curl -sL "https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/${{ matrix.ort_asset }}" | tar xz
+          fi
+
+      - name: Set ORT_PREFIX
+        shell: bash
+        run: echo "ORT_PREFIX=$(pwd)/ort/$(ls ort)" >> "$GITHUB_ENV"
+
+      - name: Install deps (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libeigen3-dev ninja-build
+
+      - name: Install deps (macOS)
+        if: runner.os == 'macOS'
+        run: brew install eigen ninja
+
+      - name: Install deps (Windows)
+        if: runner.os == 'Windows'
+        run: choco install ninja -y
+
+      - name: Setup MSVC (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Configure
+        shell: bash
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DORT_PREFIX="$ORT_PREFIX"
+
+      - name: Build
+        shell: bash
+        run: cmake --build build --config Release
+
+      - name: Verify linkage (Linux)
+        if: runner.os == 'Linux'
+        run: ldd build/${{ matrix.plugin }}
+
+      - name: Verify linkage (macOS)
+        if: runner.os == 'macOS'
+        run: otool -L build/${{ matrix.plugin }}
+
+      - name: Verify linkage (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: dumpbin /dependents build\${{ matrix.plugin }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}
+          path: build/${{ matrix.plugin }}
+
+  models:
+    runs-on: ubuntu-22.04
+    name: Convert models
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install conversion deps
+        run: |
+          pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+          pip install -e vendor/demucs.onnx/demucs-for-onnx onnx onnxruntime onnxscript
+
+      - name: Convert 4-stem model
+        run: make models-4s
+
+      - name: Convert 6-stem model
+        run: make models-6s
+
+      - name: Verify model files
+        run: ls -lh models/*.ort

@@ -1,0 +1,161 @@
+name: Release
+
+on:
+  release:
+    types: [created]
+
+permissions:
+  contents: write
+
+env:
+  ORT_VERSION: "1.19.2"
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            platform: linux-x64
+            ort_asset: onnxruntime-linux-x64-gpu-1.19.2.tgz
+            archive: reaper-source-separation-linux-x64.tar.gz
+          - os: macos-14
+            platform: macos-arm64
+            ort_asset: onnxruntime-osx-arm64-1.19.2.tgz
+            archive: reaper-source-separation-macos-arm64.tar.gz
+          - os: windows-2022
+            platform: windows-x64
+            ort_asset: onnxruntime-win-x64-gpu-1.19.2.zip
+            archive: reaper-source-separation-windows-x64.zip
+
+    runs-on: ${{ matrix.os }}
+    name: Build (${{ matrix.platform }})
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Cache ONNX Runtime
+        id: cache-ort
+        uses: actions/cache@v4
+        with:
+          path: ort
+          key: ort-${{ matrix.platform }}-${{ env.ORT_VERSION }}
+
+      - name: Download ONNX Runtime
+        if: steps.cache-ort.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          mkdir -p ort
+          cd ort
+          if [[ "${{ matrix.ort_asset }}" == *.zip ]]; then
+            curl -sL "https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/${{ matrix.ort_asset }}" -o ort.zip
+            unzip -q ort.zip
+            rm ort.zip
+          else
+            curl -sL "https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/${{ matrix.ort_asset }}" | tar xz
+          fi
+
+      - name: Set ORT_PREFIX
+        shell: bash
+        run: echo "ORT_PREFIX=$(pwd)/ort/$(ls ort)" >> "$GITHUB_ENV"
+
+      - name: Install deps (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libeigen3-dev ninja-build
+
+      - name: Install deps (macOS)
+        if: runner.os == 'macOS'
+        run: brew install eigen ninja
+
+      - name: Install deps (Windows)
+        if: runner.os == 'Windows'
+        run: choco install ninja make -y
+
+      - name: Setup MSVC (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Build & package
+        shell: bash
+        run: make dist ORT_PREFIX="$ORT_PREFIX" CMAKE_EXTRA="-DDOWNLOAD_TAG=${{ github.event.release.tag_name }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.archive }}
+          path: ${{ matrix.archive }}
+
+  models:
+    runs-on: ubuntu-22.04
+    name: Convert models
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install conversion deps
+        run: |
+          pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+          pip install -e vendor/demucs.onnx/demucs-for-onnx onnx onnxruntime onnxscript
+
+      - name: Convert 4-stem model
+        run: make models-4s
+
+      - name: Convert 6-stem model
+        run: make models-6s
+
+      - name: Select optimized models
+        run: |
+          mkdir -p model-assets
+          for name in htdemucs htdemucs_6s; do
+            if [ -f "models/${name}.with_runtime_opt.ort" ]; then
+              cp "models/${name}.with_runtime_opt.ort" "model-assets/${name}.ort"
+            else
+              cp "models/${name}.ort" "model-assets/${name}.ort"
+            fi
+          done
+          ls -lh model-assets/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: models
+          path: model-assets/*.ort
+
+  upload:
+    needs: [build, models]
+    runs-on: ubuntu-22.04
+    name: Upload release assets
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Upload platform archives
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          for archive in artifacts/reaper-source-separation-*/*; do
+            echo "Uploading $archive"
+            gh release upload "$TAG" "$archive" --repo "$GH_REPO" --clobber
+          done
+
+      - name: Upload model files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          for model in artifacts/models/*.ort; do
+            echo "Uploading $model"
+            gh release upload "$TAG" "$model" --repo "$GH_REPO" --clobber
+          done

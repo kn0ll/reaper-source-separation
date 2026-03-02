@@ -1,0 +1,26 @@
+# Build
+build/
+dist/
+reaper-source-separation-*.tar.gz
+reaper-source-separation-*.zip
+
+# Model files (large, built via `make models`)
+models/*.ort
+models/*.onnx
+models/*.onnx.data
+models/*.config
+models/*.with_runtime_opt.*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*.swo
+*~

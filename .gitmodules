@@ -1,0 +1,10 @@
+[submodule "vendor/demucs.onnx"]
+	path = vendor/demucs.onnx
+	url = https://github.com/sevagh/demucs.onnx.git
+[submodule "vendor/reaper-sdk"]
+	path = vendor/reaper-sdk
+	url = https://github.com/justinfrankel/reaper-sdk.git
+	ignore = untracked
+[submodule "vendor/wdl"]
+	path = vendor/wdl
+	url = https://github.com/justinfrankel/WDL.git

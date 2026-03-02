@@ -1,0 +1,15 @@
+#include <windows.h>
+#include "resource.h"
+
+IDD_SEPARATE DIALOGEX 0, 0, 300, 70
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Separate Sources"
+FONT 8, "MS Shell Dlg"
+BEGIN
+    LTEXT           "Model:", -1, 7, 9, 28, 8
+    COMBOBOX        IDC_MODEL, 38, 7, 255, 100, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "", IDC_PROGRESS, "msctls_progress32", 0, 7, 24, 286, 12
+    LTEXT           "", IDC_STATUS, 7, 40, 286, 10
+    DEFPUSHBUTTON   "Separate", IDC_SEPARATE, 183, 53, 55, 14
+    PUSHBUTTON      "Cancel", IDC_CANCEL, 241, 53, 55, 14
+END
