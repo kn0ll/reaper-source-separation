@@ -2,8 +2,6 @@
 
 A native REAPER extension for AI source separation. Right-click any audio item, select **Separate Sources**, and get individual stems (vocals, drums, bass, etc.) as new tracks in your project.
 
-Models are downloaded automatically the first time you use them -- no manual setup required.
-
 ## Table of contents
 
 - [Install](#install)
