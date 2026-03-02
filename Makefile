@@ -86,7 +86,7 @@ ort:
 	fi
 
 dist: ort
-	$(MAKE) _dist PROVIDER=$(PROVIDER) CMAKE_EXTRA='$(CMAKE_EXTRA)'
+	$(MAKE) _dist ORT_PREFIX=$(ORT_PREFIX) PROVIDER=$(PROVIDER) CMAKE_EXTRA='$(CMAKE_EXTRA)'
 
 _dist: plugin
 	rm -rf $(DIST_DIR)
