@@ -4,26 +4,38 @@ A native REAPER extension for AI source separation. Right-click any audio item, 
 
 Models are downloaded automatically the first time you use them -- no manual setup required.
 
+## Table of contents
+
+- [Install](#install)
+  - [Linux](#linux)
+  - [macOS](#macos)
+  - [Windows](#windows)
+- [Usage](#usage)
+- [How it works](#how-it-works)
+- [Building from source](#building-from-source)
+- [Running from source](#running-from-source)
+  - [Converting models locally](#converting-models-locally)
+
 ## Install
 
-1. Go to the [Releases](https://github.com/kn0ll/reaper-source-separation/releases) page
-2. Download the archive for your platform:
-   - **Linux**: `reaper-source-separation-linux-x64.tar.gz`
-   - **macOS**: `reaper-source-separation-macos-arm64.tar.gz`
-   - **Windows**: `reaper-source-separation-windows-x64.zip`
-3. Extract into your REAPER `UserPlugins` folder:
-   - **Linux**: `~/.config/REAPER/UserPlugins/`
-   - **macOS**: `~/Library/Application Support/REAPER/UserPlugins/`
-   - **Windows**: `%APPDATA%\REAPER\UserPlugins\`
-4. Restart REAPER
+Download the archive for your platform, extract it into your REAPER `UserPlugins` folder, and restart REAPER.
 
-After extracting, your `UserPlugins` folder should look like:
+### Linux
 
+```bash
+curl -fSL https://github.com/kn0ll/reaper-source-separation/releases/latest/download/reaper-source-separation-linux-x64-cuda.tar.gz | tar xz -C ~/.config/REAPER/UserPlugins/
 ```
-UserPlugins/
-  reaper_source_separation.so          (or .dylib / .dll)
-  reaper-source-separation/
-    libonnxruntime.so*      (or .dylib / .dll)
+
+### macOS
+
+```bash
+curl -fSL https://github.com/kn0ll/reaper-source-separation/releases/latest/download/reaper-source-separation-macos-arm64-cpu.tar.gz | tar xz -C ~/Library/Application\ Support/REAPER/UserPlugins/
+```
+
+### Windows
+
+```powershell
+Invoke-WebRequest https://github.com/kn0ll/reaper-source-separation/releases/latest/download/reaper-source-separation-windows-x64-cuda.zip -OutFile $env:TEMP\rss.zip; Expand-Archive $env:TEMP\rss.zip "$env:APPDATA\REAPER\UserPlugins" -Force; Remove-Item $env:TEMP\rss.zip
 ```
 
 ## Usage
@@ -50,7 +62,7 @@ cd reaper-source-separation
 make dist
 ```
 
-This produces a platform archive (e.g. `reaper-source-separation-linux-x64.tar.gz`) ready to extract into `UserPlugins/`.
+This produces a platform archive (e.g. `reaper-source-separation-linux-x64-cpu.tar.gz`) ready to extract into `UserPlugins/`.
 
 Set `ORT_PREFIX` if ONNX Runtime is installed somewhere non-standard:
 
