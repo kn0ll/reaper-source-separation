@@ -29,7 +29,8 @@ else
     ARCHIVE_FMT   := zip
 endif
 
-DIST_NAME := reaper-source-separation-$(PLATFORM)-$(ARCH)
+PROVIDER ?= cpu
+DIST_NAME := reaper-source-separation-$(PLATFORM)-$(ARCH)-$(PROVIDER)
 
 CMAKE_EXTRA ?=
 ifneq ($(ORT_PREFIX),/usr/local)
@@ -93,4 +94,5 @@ help:
 	@echo ""
 	@echo "Variables:"
 	@echo "  ORT_PREFIX    Path to ONNX Runtime install (default: /usr/local)"
+	@echo "  PROVIDER      Execution provider tag for archive name: cpu or cuda (default: cpu)"
 	@echo "  PYTHON        Python interpreter (default: python3)"

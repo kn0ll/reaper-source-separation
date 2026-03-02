@@ -18,16 +18,19 @@ jobs:
         include:
           - os: ubuntu-22.04
             platform: linux-x64
+            provider: cuda
             ort_asset: onnxruntime-linux-x64-gpu-1.19.2.tgz
-            archive: reaper-source-separation-linux-x64.tar.gz
+            archive: reaper-source-separation-linux-x64-cuda.tar.gz
           - os: macos-14
             platform: macos-arm64
+            provider: cpu
             ort_asset: onnxruntime-osx-arm64-1.19.2.tgz
-            archive: reaper-source-separation-macos-arm64.tar.gz
+            archive: reaper-source-separation-macos-arm64-cpu.tar.gz
           - os: windows-2022
             platform: windows-x64
+            provider: cuda
             ort_asset: onnxruntime-win-x64-gpu-1.19.2.zip
-            archive: reaper-source-separation-windows-x64.zip
+            archive: reaper-source-separation-windows-x64-cuda.zip
 
     runs-on: ${{ matrix.os }}
     name: Build (${{ matrix.platform }})
@@ -80,7 +83,7 @@ jobs:
 
       - name: Build & package
         shell: bash
-        run: make dist ORT_PREFIX="$ORT_PREFIX" CMAKE_EXTRA="-DDOWNLOAD_REPO=${{ github.repository }} -DDOWNLOAD_TAG=${{ github.event.release.tag_name }}"
+        run: make dist ORT_PREFIX="$ORT_PREFIX" PROVIDER="${{ matrix.provider }}" CMAKE_EXTRA="-DDOWNLOAD_REPO=${{ github.repository }} -DDOWNLOAD_TAG=${{ github.event.release.tag_name }}"
 
       - uses: actions/upload-artifact@v4
         with:

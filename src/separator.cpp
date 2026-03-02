@@ -2,6 +2,7 @@
 #include "audio_io.h"
 #include "demucs.hpp"
 #include <onnxruntime/core/session/onnxruntime_cxx_api.h>
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <cmath>
@@ -25,6 +26,7 @@ static std::thread                   g_thread;
 static std::mutex                    g_model_mutex;
 static demucsonnx::demucs_model      g_model;
 static std::string                   g_loaded_model_path;
+static bool                          g_loaded_with_gpu = false;
 
 static fs::path temp_parent_dir() {
     return fs::temp_directory_path() / "reaper_source_separation";
@@ -44,14 +46,36 @@ static void set_status(const std::string& msg) {
     g_status = msg;
 }
 
+static bool try_cuda_provider(Ort::SessionOptions& opts) {
+    auto providers = Ort::GetAvailableProviders();
+    if (std::find(providers.begin(), providers.end(), "CUDAExecutionProvider") == providers.end())
+        return false;
+    try {
+        OrtCUDAProviderOptions cuda_opts{};
+        opts.AppendExecutionProvider_CUDA(cuda_opts);
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
 static void worker(SeparationRequest req) {
     try {
         g_progress.store(0.0f);
-        set_status("Loading model...");
 
+        bool using_gpu = false;
         {
             std::lock_guard<std::mutex> lk(g_model_mutex);
-            if (g_loaded_model_path != req.model_path) {
+
+            Ort::SessionOptions opts;
+            opts.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
+            using_gpu = try_cuda_provider(opts);
+            if (!using_gpu)
+                opts.SetExecutionMode(ExecutionMode::ORT_PARALLEL);
+
+            set_status(using_gpu ? "Loading model (GPU)..." : "Loading model...");
+
+            if (g_loaded_model_path != req.model_path || g_loaded_with_gpu != using_gpu) {
                 std::ifstream f(req.model_path, std::ios::binary | std::ios::ate);
                 if (!f) throw std::runtime_error("Cannot open model: " + req.model_path);
 
@@ -61,15 +85,14 @@ static void worker(SeparationRequest req) {
                 if (!f.read(data.data(), sz))
                     throw std::runtime_error("Failed to read model file");
 
-                Ort::SessionOptions opts;
-                opts.SetExecutionMode(ExecutionMode::ORT_PARALLEL);
-                opts.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
-
                 g_model = demucsonnx::demucs_model{};
                 if (!demucsonnx::load_model(data, g_model, opts))
                     throw std::runtime_error("Failed to load ONNX model");
 
                 g_loaded_model_path = req.model_path;
+                g_loaded_with_gpu = using_gpu;
+                fprintf(stderr, "[reaper-source-separation] using %s for inference\n",
+                        using_gpu ? "GPU (CUDA)" : "CPU");
             }
         }
 
@@ -81,8 +104,9 @@ static void worker(SeparationRequest req) {
         Eigen::MatrixXf audio = audio_io::load(req.source_path);
         float duration = static_cast<float>(audio.cols()) / demucsonnx::SUPPORTED_SAMPLE_RATE;
         g_progress.store(0.10f);
-        char dur_buf[64];
-        snprintf(dur_buf, sizeof(dur_buf), "Separating %.1fs of audio...", duration);
+        char dur_buf[128];
+        snprintf(dur_buf, sizeof(dur_buf), "Separating %.1fs of audio%s...",
+                 duration, using_gpu ? " (GPU)" : "");
         set_status(dur_buf);
 
         if (g_cancel.load()) throw std::runtime_error("Cancelled");
@@ -202,6 +226,7 @@ void separator::cleanup_model() {
     std::lock_guard<std::mutex> lk(g_model_mutex);
     g_model = demucsonnx::demucs_model{};
     g_loaded_model_path.clear();
+    g_loaded_with_gpu = false;
 }
 
 void separator::cleanup_temp_files() {
