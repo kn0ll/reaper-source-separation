@@ -1,5 +1,8 @@
 # reaper-source-separation
 
+[![CI](https://github.com/kn0ll/reaper-source-separation/actions/workflows/ci.yml/badge.svg)](https://github.com/kn0ll/reaper-source-separation/actions/workflows/ci.yml)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/kn0ll/reaper-source-separation)
+
 A native REAPER extension for AI source separation. Right-click any audio item, select **Separate Sources**, and get individual stems (vocals, drums, bass, etc.) as new tracks in your project.
 
 ## Table of contents
@@ -16,7 +19,7 @@ A native REAPER extension for AI source separation. Right-click any audio item, 
 
 ## Install
 
-Download the archive for your platform, extract it into your REAPER `UserPlugins` folder, and restart REAPER.
+Download the archive for your platform from the [latest release](https://github.com/kn0ll/reaper-source-separation/releases/latest), extract it into your REAPER `UserPlugins` folder, and restart REAPER.
 
 ### Linux
 

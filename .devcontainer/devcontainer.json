@@ -1,14 +1,9 @@
 {
   "name": "reaper-source-separation",
   "build": { "dockerfile": "Dockerfile", "context": ".." },
-  "runArgs": ["--gpus", "all"],
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
   "workspaceFolder": "/workspace",
   "remoteUser": "vscode",
-  "mounts": [
-    "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh-host,type=bind,readonly"
-  ],
-  "postStartCommand": "cp -rn /home/vscode/.ssh-host/. /home/vscode/.ssh/ 2>/dev/null; chmod 700 /home/vscode/.ssh; chmod 600 /home/vscode/.ssh/* 2>/dev/null; ssh-keyscan github.com >> /home/vscode/.ssh/known_hosts 2>/dev/null; true",
   "customizations": {
     "vscode": {
       "extensions": ["ms-vscode.cpptools", "ms-vscode.cmake-tools"],
