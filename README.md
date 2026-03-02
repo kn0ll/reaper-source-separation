@@ -28,10 +28,13 @@ Download the archive for your platform from the [latest release](https://github.
 curl -fSL https://github.com/kn0ll/reaper-source-separation/releases/latest/download/reaper-source-separation-linux-x64-cuda.tar.gz | tar xz -C ~/.config/REAPER/UserPlugins/
 ```
 
-For GPU acceleration, install the [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) and [cuDNN](https://developer.nvidia.com/cudnn):
+For GPU acceleration with an NVIDIA GPU, add the [CUDA repository](https://developer.nvidia.com/cuda-downloads) and install the runtime libraries:
 
 ```bash
-sudo apt-get install cuda-toolkit-12-4 libcudnn9-cuda-12
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
+sudo dpkg -i cuda-keyring_1.1-1_all.deb
+sudo apt-get update
+sudo apt-get install cuda-toolkit-12 libcudnn9-cuda-12
 ```
 
 Without these, the plugin still works but runs on CPU.
@@ -42,13 +45,15 @@ Without these, the plugin still works but runs on CPU.
 curl -fSL https://github.com/kn0ll/reaper-source-separation/releases/latest/download/reaper-source-separation-macos-arm64-cpu.tar.gz | tar xz -C ~/Library/Application\ Support/REAPER/UserPlugins/
 ```
 
+GPU acceleration is not available on macOS. The plugin runs on CPU, which is still plenty fast for most tracks.
+
 ### Windows
 
 ```powershell
 Invoke-WebRequest https://github.com/kn0ll/reaper-source-separation/releases/latest/download/reaper-source-separation-windows-x64-cuda.zip -OutFile $env:TEMP\rss.zip; Expand-Archive $env:TEMP\rss.zip "$env:APPDATA\REAPER\UserPlugins" -Force; Remove-Item $env:TEMP\rss.zip
 ```
 
-For GPU acceleration, install the [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) and [cuDNN](https://developer.nvidia.com/cudnn). Without these, the plugin still works but runs on CPU.
+For GPU acceleration with an NVIDIA GPU, install the [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) and [cuDNN](https://developer.nvidia.com/cudnn). Without these, the plugin still works but runs on CPU.
 
 ## Usage
 
