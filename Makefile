@@ -50,16 +50,13 @@ ifeq ($(ORT_PREFIX),)
 endif
 
 CMAKE_EXTRA ?=
-ifneq ($(ORT_PREFIX),/usr/local)
-    CMAKE_EXTRA += -DORT_PREFIX=$(ORT_PREFIX)
-endif
 
 .PHONY: all plugin models models-4s models-6s ort dist _dist clean help
 
 all: plugin
 
 plugin:
-	cmake -S . -B $(BUILD_DIR) -G Ninja -DCMAKE_BUILD_TYPE=Release $(CMAKE_EXTRA)
+	cmake -S . -B $(BUILD_DIR) -G Ninja -DCMAKE_BUILD_TYPE=Release -DORT_PREFIX=$(ORT_PREFIX) $(CMAKE_EXTRA)
 	cmake --build $(BUILD_DIR) --config Release
 	@echo "Built: $(BUILD_DIR)/reaper_source_separation$(PLUGIN_EXT)"
 
