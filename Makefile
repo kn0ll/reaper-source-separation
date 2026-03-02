@@ -3,9 +3,10 @@ DIST_DIR    := dist
 VENDOR_DIR  := vendor/demucs.onnx
 MODELS_DIR  := models
 PYTHON      ?= python3
-ORT_PREFIX  ?= /usr/local
+ORT_VERSION ?= 1.19.2
+PROVIDER    ?= cpu
 
-# Auto-detect platform for dist
+# Auto-detect platform
 UNAME_S := $(shell uname -s 2>/dev/null || echo Windows)
 UNAME_M := $(shell uname -m 2>/dev/null || echo x86_64)
 
@@ -15,29 +16,45 @@ ifeq ($(UNAME_S),Darwin)
     PLUGIN_EXT    := .dylib
     ORT_LIB_GLOB  := libonnxruntime*.dylib
     ARCHIVE_FMT   := tar.gz
+    ORT_ASSET     := onnxruntime-osx-$(ARCH)-$(ORT_VERSION).tgz
 else ifeq ($(UNAME_S),Linux)
     PLATFORM      := linux
     ARCH          := x64
     PLUGIN_EXT    := .so
     ORT_LIB_GLOB  := libonnxruntime*.so*
     ARCHIVE_FMT   := tar.gz
+    ifeq ($(PROVIDER),cuda)
+        ORT_ASSET := onnxruntime-linux-x64-gpu-$(ORT_VERSION).tgz
+    else
+        ORT_ASSET := onnxruntime-linux-x64-$(ORT_VERSION).tgz
+    endif
 else
     PLATFORM      := windows
     ARCH          := x64
     PLUGIN_EXT    := .dll
     ORT_LIB_GLOB  := onnxruntime*.dll
     ARCHIVE_FMT   := zip
+    ifeq ($(PROVIDER),cuda)
+        ORT_ASSET := onnxruntime-win-x64-gpu-$(ORT_VERSION).zip
+    else
+        ORT_ASSET := onnxruntime-win-x64-$(ORT_VERSION).zip
+    endif
 endif
 
-PROVIDER ?= cpu
 DIST_NAME := reaper-source-separation-$(PLATFORM)-$(ARCH)-$(PROVIDER)
+
+# Auto-download ORT into ort/ if ORT_PREFIX not explicitly set
+ORT_PREFIX ?= $(shell ls -d ort/onnxruntime-* 2>/dev/null | head -1)
+ifeq ($(ORT_PREFIX),)
+    ORT_PREFIX := /usr/local
+endif
 
 CMAKE_EXTRA ?=
 ifneq ($(ORT_PREFIX),/usr/local)
     CMAKE_EXTRA += -DORT_PREFIX=$(ORT_PREFIX)
 endif
 
-.PHONY: all plugin models models-4s models-6s dist clean help
+.PHONY: all plugin models models-4s models-6s ort dist _dist clean help
 
 all: plugin
 
@@ -58,7 +75,20 @@ models-6s:
 	$(PYTHON) $(VENDOR_DIR)/scripts/convert-pth-to-onnx.py $(MODELS_DIR) --six-source
 	$(PYTHON) -m onnxruntime.tools.convert_onnx_models_to_ort $(MODELS_DIR)
 
-dist: plugin
+ort:
+	@if [ "$(ORT_PREFIX)" = "/usr/local" ] && [ ! -d ort ]; then \
+		echo "Downloading $(ORT_ASSET)..."; \
+		mkdir -p ort && cd ort \
+		&& curl -fSL "https://github.com/microsoft/onnxruntime/releases/download/v$(ORT_VERSION)/$(ORT_ASSET)" -o ort-dl \
+		&& if echo "$(ORT_ASSET)" | grep -q '\.zip$$'; then unzip -q ort-dl; else tar xzf ort-dl; fi \
+		&& rm ort-dl; \
+		echo "ORT downloaded to ort/"; \
+	fi
+
+dist: ort
+	$(MAKE) _dist PROVIDER=$(PROVIDER) CMAKE_EXTRA='$(CMAKE_EXTRA)'
+
+_dist: plugin
 	rm -rf $(DIST_DIR)
 	mkdir -p $(DIST_DIR)/reaper-source-separation/models
 	cp $(BUILD_DIR)/reaper_source_separation$(PLUGIN_EXT) $(DIST_DIR)/
@@ -81,7 +111,7 @@ endif
 	@echo "Packaged: $(DIST_NAME).$(ARCHIVE_FMT)"
 
 clean:
-	rm -rf $(BUILD_DIR) $(DIST_DIR) reaper-source-separation-*.tar.gz reaper-source-separation-*.zip
+	rm -rf $(BUILD_DIR) $(DIST_DIR) ort reaper-source-separation-*.tar.gz reaper-source-separation-*.zip
 
 help:
 	@echo "Targets:"
