@@ -48,13 +48,23 @@ static void set_status(const std::string& msg) {
 
 static bool try_cuda_provider(Ort::SessionOptions& opts) {
     auto providers = Ort::GetAvailableProviders();
+    fprintf(stderr, "[reaper-source-separation] available providers:");
+    for (const auto& p : providers) fprintf(stderr, " %s", p.c_str());
+    fprintf(stderr, "\n");
+
     if (std::find(providers.begin(), providers.end(), "CUDAExecutionProvider") == providers.end())
         return false;
     try {
         OrtCUDAProviderOptions cuda_opts{};
+        cuda_opts.cudnn_conv_algo_search = OrtCudnnConvAlgoSearchDefault;
         opts.AppendExecutionProvider_CUDA(cuda_opts);
+        fprintf(stderr, "[reaper-source-separation] CUDA provider attached\n");
         return true;
+    } catch (const std::exception& e) {
+        fprintf(stderr, "[reaper-source-separation] CUDA provider failed: %s\n", e.what());
+        return false;
     } catch (...) {
+        fprintf(stderr, "[reaper-source-separation] CUDA provider failed (unknown error)\n");
         return false;
     }
 }
@@ -136,7 +146,38 @@ static void worker(SeparationRequest req) {
         Eigen::Tensor3dXf targets;
         {
             std::lock_guard<std::mutex> lk(g_model_mutex);
-            targets = demucsonnx::demucs_inference(g_model, audio, cb);
+            try {
+                targets = demucsonnx::demucs_inference(g_model, audio, cb);
+            } catch (const std::exception& e) {
+                if (!using_gpu) throw;
+                fprintf(stderr, "[reaper-source-separation] GPU inference failed: %s\n", e.what());
+                fprintf(stderr, "[reaper-source-separation] falling back to CPU\n");
+                set_status("GPU failed, reloading on CPU...");
+
+                Ort::SessionOptions cpu_opts;
+                cpu_opts.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
+                cpu_opts.SetExecutionMode(ExecutionMode::ORT_PARALLEL);
+
+                std::ifstream f2(req.model_path, std::ios::binary | std::ios::ate);
+                if (!f2) throw std::runtime_error("Cannot open model: " + req.model_path);
+                std::streamsize sz2 = f2.tellg();
+                f2.seekg(0, std::ios::beg);
+                std::vector<char> data2(sz2);
+                if (!f2.read(data2.data(), sz2))
+                    throw std::runtime_error("Failed to read model file");
+
+                g_model = demucsonnx::demucs_model{};
+                if (!demucsonnx::load_model(data2, g_model, cpu_opts))
+                    throw std::runtime_error("Failed to load ONNX model on CPU");
+                g_loaded_with_gpu = false;
+
+                seg_count = 0;
+                total_segs = 0;
+                prev_p = -1.0f;
+                using_gpu = false;
+                set_status("Separating on CPU...");
+                targets = demucsonnx::demucs_inference(g_model, audio, cb);
+            }
         }
 
         if (g_cancel.load()) throw std::runtime_error("Cancelled");

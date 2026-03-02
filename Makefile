@@ -42,9 +42,10 @@ else
 endif
 
 DIST_NAME := reaper-source-separation-$(PLATFORM)-$(ARCH)-$(PROVIDER)
+ORT_EXTRACT_DIR := $(subst .tgz,,$(subst .zip,,$(ORT_ASSET)))
 
 # Auto-download ORT into ort/ if ORT_PREFIX not explicitly set
-ORT_PREFIX ?= $(shell ls -d ort/onnxruntime-* 2>/dev/null | head -1)
+ORT_PREFIX ?= $(shell ls -d ort/$(ORT_EXTRACT_DIR) 2>/dev/null)
 ifeq ($(ORT_PREFIX),)
     ORT_PREFIX := /usr/local
 endif
@@ -73,13 +74,13 @@ models-6s:
 	$(PYTHON) -m onnxruntime.tools.convert_onnx_models_to_ort $(MODELS_DIR)
 
 ort:
-	@if [ "$(ORT_PREFIX)" = "/usr/local" ] && [ ! -d ort ]; then \
+	@if [ "$(ORT_PREFIX)" = "/usr/local" ] && [ ! -d "ort/$(ORT_EXTRACT_DIR)" ]; then \
 		echo "Downloading $(ORT_ASSET)..."; \
 		mkdir -p ort && cd ort \
 		&& curl -fSL "https://github.com/microsoft/onnxruntime/releases/download/v$(ORT_VERSION)/$(ORT_ASSET)" -o ort-dl \
 		&& if echo "$(ORT_ASSET)" | grep -q '\.zip$$'; then unzip -q ort-dl; else tar xzf ort-dl; fi \
 		&& rm ort-dl; \
-		echo "ORT downloaded to ort/"; \
+		echo "ORT downloaded to ort/$(ORT_EXTRACT_DIR)"; \
 	fi
 
 dist: ort
