@@ -5,11 +5,7 @@ reaper-source-separation-*.tar.gz
 reaper-source-separation-*.zip
 
 # Model files (large, built via `make models`)
-models/*.ort
-models/*.onnx
-models/*.onnx.data
-models/*.config
-models/*.with_runtime_opt.*
+models/
 
 # Python
 __pycache__/

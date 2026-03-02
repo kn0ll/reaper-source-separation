@@ -48,10 +48,12 @@ plugin:
 models: models-4s models-6s
 
 models-4s:
+	@mkdir -p $(MODELS_DIR)
 	$(PYTHON) $(VENDOR_DIR)/scripts/convert-pth-to-onnx.py $(MODELS_DIR)
 	$(PYTHON) -m onnxruntime.tools.convert_onnx_models_to_ort $(MODELS_DIR)
 
 models-6s:
+	@mkdir -p $(MODELS_DIR)
 	$(PYTHON) $(VENDOR_DIR)/scripts/convert-pth-to-onnx.py $(MODELS_DIR) --six-source
 	$(PYTHON) -m onnxruntime.tools.convert_onnx_models_to_ort $(MODELS_DIR)
 
