@@ -80,7 +80,7 @@ jobs:
 
       - name: Build & package
         shell: bash
-        run: make dist ORT_PREFIX="$ORT_PREFIX" CMAKE_EXTRA="-DDOWNLOAD_TAG=${{ github.event.release.tag_name }}"
+        run: make dist ORT_PREFIX="$ORT_PREFIX" CMAKE_EXTRA="-DDOWNLOAD_REPO=${{ github.repository }} -DDOWNLOAD_TAG=${{ github.event.release.tag_name }}"
 
       - uses: actions/upload-artifact@v4
         with:

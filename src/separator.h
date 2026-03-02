@@ -41,6 +41,7 @@ std::string error_message();
 
 void reset();
 void cleanup_model();
+void cleanup_temp_files();
 
 } // namespace separator
 

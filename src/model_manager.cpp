@@ -8,8 +8,8 @@
 
 namespace fs = std::filesystem;
 
-#ifndef DOWNLOAD_BASE_URL
-#define DOWNLOAD_BASE_URL "https://github.com/kn0ll/reaper-source-separation/releases"
+#ifndef DOWNLOAD_REPO
+#define DOWNLOAD_REPO "kn0ll/reaper-source-separation"
 #endif
 
 #ifndef DOWNLOAD_TAG
@@ -98,7 +98,7 @@ static void download_worker(std::string model_id) {
     g_dl_temp_path = temp;
 
     std::string tag = DOWNLOAD_TAG;
-    std::string url = std::string(DOWNLOAD_BASE_URL) + "/"
+    std::string url = "https://github.com/" + std::string(DOWNLOAD_REPO) + "/releases/"
         + (tag == "latest" ? "latest/download" : "download/" + tag)
         + "/" + info->filename;
 
@@ -135,7 +135,10 @@ static void download_worker(std::string model_id) {
     if (ret != 0) {
         fs::remove(temp);
         std::lock_guard<std::mutex> lk(g_dl_mutex);
-        g_dl_error = "Download failed (curl exit " + std::to_string(ret) + "). Check your internet connection.";
+        if (ret == 127 || ret == 0x7F00)
+            g_dl_error = "Download failed: curl not found. Please install curl and ensure it is in your PATH.";
+        else
+            g_dl_error = "Download failed (curl exit " + std::to_string(ret) + "). Check your internet connection.";
         g_dl_state.store(model_manager::DownloadState::Error);
         return;
     }

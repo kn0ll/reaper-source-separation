@@ -32,8 +32,18 @@ static std::string resolve_cache_dir() {
 }
 
 static std::string resolve_local_dir() {
-    // Check next to plugin binary for a local models/ dir (dev workflow)
-#ifndef _WIN32
+#ifdef _WIN32
+    HMODULE hm = nullptr;
+    if (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+                           GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                           (LPCSTR)&resolve_local_dir, &hm) && hm) {
+        char path[MAX_PATH];
+        if (GetModuleFileNameA(hm, path, sizeof(path))) {
+            fs::path nearby = fs::path(path).parent_path() / "reaper-source-separation" / "models";
+            if (fs::exists(nearby)) return nearby.string();
+        }
+    }
+#else
     Dl_info info;
     if (dladdr((void*)&resolve_local_dir, &info) && info.dli_fname) {
         fs::path nearby = fs::path(info.dli_fname).parent_path() / "reaper-source-separation" / "models";
@@ -98,7 +108,6 @@ static bool hook_command(int cmd, int flag) {
 }
 
 static void menu_hook(const char* menuidstr, HMENU menu, int flag) {
-    fprintf(stderr, "[reaper-source-separation] menu_hook: menuidstr=\"%s\" flag=%d\n", menuidstr, flag);
     if (flag == 0) {
         InsertMenu(menu, GetMenuItemCount(menu), MF_BYPOSITION | MF_STRING, g_cmd_id, "Separate sources");
     }

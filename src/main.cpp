@@ -47,6 +47,7 @@ extern "C" REAPER_PLUGIN_DLL_EXPORT int REAPER_PLUGIN_ENTRYPOINT(
         actions::unregister_all();
         dialog::close();
         separator::cleanup_model();
+        separator::cleanup_temp_files();
         return 0;
     }
 
@@ -66,6 +67,7 @@ extern "C" REAPER_PLUGIN_DLL_EXPORT int REAPER_PLUGIN_ENTRYPOINT(
         return 0;
     }
 
+    separator::cleanup_temp_files();
     dialog::init(rec->hwnd_main, g_hInst);
 
     if (!actions::register_all(rec)) {

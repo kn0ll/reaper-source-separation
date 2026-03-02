@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <random>
 
 namespace fs = std::filesystem;
 
@@ -25,10 +26,15 @@ static std::mutex                    g_model_mutex;
 static demucsonnx::demucs_model      g_model;
 static std::string                   g_loaded_model_path;
 
+static fs::path temp_parent_dir() {
+    return fs::temp_directory_path() / "reaper_source_separation";
+}
+
 static std::string make_output_dir() {
-    auto tmp = fs::temp_directory_path() / "reaper_source_separation";
-    std::srand(static_cast<unsigned>(std::time(nullptr)));
-    auto subdir = tmp / std::to_string(std::rand());
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<uint64_t> dist;
+    auto subdir = temp_parent_dir() / std::to_string(dist(gen));
     fs::create_directories(subdir);
     return subdir.string();
 }
@@ -196,4 +202,9 @@ void separator::cleanup_model() {
     std::lock_guard<std::mutex> lk(g_model_mutex);
     g_model = demucsonnx::demucs_model{};
     g_loaded_model_path.clear();
+}
+
+void separator::cleanup_temp_files() {
+    std::error_code ec;
+    fs::remove_all(temp_parent_dir(), ec);
 }

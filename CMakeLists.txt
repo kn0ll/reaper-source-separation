@@ -94,6 +94,12 @@ set_target_properties(reaper_source_separation PROPERTIES
     OUTPUT_NAME "reaper_source_separation"
 )
 
+if(DOWNLOAD_REPO)
+    target_compile_definitions(reaper_source_separation PRIVATE
+        DOWNLOAD_REPO="${DOWNLOAD_REPO}"
+    )
+endif()
+
 if(DOWNLOAD_TAG)
     target_compile_definitions(reaper_source_separation PRIVATE
         DOWNLOAD_TAG="${DOWNLOAD_TAG}"
