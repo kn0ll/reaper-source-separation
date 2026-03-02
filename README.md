@@ -1,4 +1,8 @@
-# reaper-source-separation [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/kn0ll/reaper-source-separation) [![CI](https://github.com/kn0ll/reaper-source-separation/actions/workflows/ci.yml/badge.svg)](https://github.com/kn0ll/reaper-source-separation/actions/workflows/ci.yml)
+# reaper-source-separation
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/kn0ll/reaper-source-separation)
+
+[![CI](https://github.com/kn0ll/reaper-source-separation/actions/workflows/ci.yml/badge.svg)](https://github.com/kn0ll/reaper-source-separation/actions/workflows/ci.yml)
 
 A native REAPER extension for AI source separation. Right-click any audio item, select **Separate Sources**, and get individual stems (vocals, drums, bass, etc.) as new tracks in your project.
 
@@ -24,6 +28,14 @@ Download the archive for your platform from the [latest release](https://github.
 curl -fSL https://github.com/kn0ll/reaper-source-separation/releases/latest/download/reaper-source-separation-linux-x64-cuda.tar.gz | tar xz -C ~/.config/REAPER/UserPlugins/
 ```
 
+For GPU acceleration, install the [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) and [cuDNN](https://developer.nvidia.com/cudnn):
+
+```bash
+sudo apt-get install cuda-toolkit-12-4 libcudnn9-cuda-12
+```
+
+Without these, the plugin still works but runs on CPU.
+
 ### macOS
 
 ```bash
@@ -35,6 +47,8 @@ curl -fSL https://github.com/kn0ll/reaper-source-separation/releases/latest/down
 ```powershell
 Invoke-WebRequest https://github.com/kn0ll/reaper-source-separation/releases/latest/download/reaper-source-separation-windows-x64-cuda.zip -OutFile $env:TEMP\rss.zip; Expand-Archive $env:TEMP\rss.zip "$env:APPDATA\REAPER\UserPlugins" -Force; Remove-Item $env:TEMP\rss.zip
 ```
+
+For GPU acceleration, install the [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) and [cuDNN](https://developer.nvidia.com/cudnn). Without these, the plugin still works but runs on CPU.
 
 ## Usage
 
