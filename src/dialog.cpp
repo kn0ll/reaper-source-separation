@@ -237,6 +237,12 @@ void dialog::open(const SeparationRequest& req) {
     g_dialog = CreateDialogParam(g_hInst, MAKEINTRESOURCE(IDD_SEPARATE),
                                  g_main_hwnd, dialog_proc, 0);
     if (g_dialog) {
+        RECT pr, dr;
+        GetWindowRect(g_main_hwnd, &pr);
+        GetWindowRect(g_dialog, &dr);
+        int x = pr.left + ((pr.right - pr.left) - (dr.right - dr.left)) / 2;
+        int y = pr.top + ((pr.bottom - pr.top) - (dr.bottom - dr.top)) / 2;
+        SetWindowPos(g_dialog, nullptr, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
         ShowWindow(g_dialog, SW_SHOW);
     }
 }
