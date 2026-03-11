@@ -85,13 +85,17 @@ Models are downloaded automatically on first use, then cached `UserPlugins` for 
 
 ## Development
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/kn0ll/reaper-stem-separation-plugin)
-
 [![Build](https://github.com/kn0ll/reaper-stem-separation-plugin/actions/workflows/build.yml/badge.svg)](https://github.com/kn0ll/reaper-stem-separation-plugin/actions/workflows/build.yml)
 
-## Build From Source
+### Devcontainer
 
-Requires Git, a C++20 compiler, CMake 3.18+, Ninja, Eigen3, and [Docker](https://docs.docker.com/get-docker/) (for model conversion). Platform-specific install commands are included below.
+The fastest way to get started. Open the included [devcontainer](https://containers.dev/supporting) in your preferred IDE, all build dependencies are pre-installed.
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/kn0ll/reaper-stem-separation-plugin)
+
+### Build From Source
+
+Requires a C++20 compiler, CMake 3.18+, Ninja, Eigen3. Optionally requires [Docker](https://docs.docker.com/get-docker/) for model conversion.
 
 <details>
 <summary>macOS</summary>
