@@ -1,8 +1,8 @@
 # reaper-stem-separation-plugin
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/kn0ll/reaper-stem-separation-plugin)
+**Download:** [Linux](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-linux-x64-cuda.tar.gz) | [macOS](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-macos-arm64-cpu.tar.gz) | [Windows](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-windows-x64-cuda.zip)
 
-[![CI](https://github.com/kn0ll/reaper-stem-separation-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/kn0ll/reaper-stem-separation-plugin/actions/workflows/ci.yml)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/kn0ll/reaper-stem-separation-plugin) [![CI](https://github.com/kn0ll/reaper-stem-separation-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/kn0ll/reaper-stem-separation-plugin/actions/workflows/ci.yml)
 
 AI-powered stem separation plugin for REAPER — isolate vocals, drums, bass, and more with Demucs and RoFormer, directly in your DAW.
 
