@@ -9,15 +9,6 @@ Right click any audio item, click "Separate stems", and get individual tracks fo
 Download the archive for your platform from the [latest release](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest), extract it into your REAPER `UserPlugins` folder, and restart REAPER.
 
 <details>
-<summary>Linux</summary>
-
-```bash
-curl -fSL https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-linux-x64-cuda.tar.gz | tar xz -C ~/.config/REAPER/UserPlugins/
-```
-
-</details>
-
-<details>
 <summary>macOS</summary>
 
 ```bash
@@ -34,6 +25,26 @@ Invoke-WebRequest https://github.com/kn0ll/reaper-stem-separation-plugin/release
 ```
 
 </details>
+
+<details>
+<summary>Linux</summary>
+
+```bash
+curl -fSL https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-linux-x64-cuda.tar.gz | tar xz -C ~/.config/REAPER/UserPlugins/
+```
+
+</details>
+
+## Models
+
+| Label | Model | Stems | Use case |
+|-------|-------|-------|----------|
+| **Vocals (Best quality)** | BS-RoFormer HyperACE | Vocals + Instrumental | Cleanest vocal isolation, highest fidelity |
+| **Vocals (Fast)** | MelBand-RoFormer | Vocals + Instrumental | Quick vocal isolation, great for previewing |
+| **All Stems** | HTDemucs | Drums, Bass, Other, Vocals | Full 4-stem separation, strong drum isolation |
+| **All Stems + Guitar & Piano** | HTDemucs 6s | Drums, Bass, Other, Vocals, Guitar, Piano | Guitar and piano as separate stems |
+
+Models are downloaded automatically on first use and cached in `UserPlugins/reaper-stem-separation-plugin/models/`.
 
 ## Development
 
@@ -110,17 +121,6 @@ Invoke-WebRequest https://github.com/kn0ll/reaper-stem-separation-plugin/release
 ```
 
 For GPU acceleration with an NVIDIA GPU, install the [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) and [cuDNN](https://developer.nvidia.com/cudnn). Without these, the plugin still works but runs on CPU.
-
-## Models
-
-| Model | Stems | Best for |
-|-------|-------|----------|
-| **Vocals (Best quality)** — BS-RoFormer HyperACE | Vocals + Instrumental | Cleanest vocal isolation, highest overall fidelity |
-| **Vocals (Fast)** — MelBand-RoFormer | Vocals + Instrumental | Quick vocal isolation, great for previewing |
-| **All Stems** — HTDemucs | Drums, Bass, Other, Vocals | Full 4-stem separation; strong drum isolation |
-| **All Stems + Guitar & Piano** — HTDemucs 6s | Drums, Bass, Other, Vocals, Guitar, Piano | Only option for guitar and piano as separate stems |
-
-Models are downloaded automatically on first use and cached in `UserPlugins/reaper-stem-separation-plugin/models/`.
 
 ## Usage
 
