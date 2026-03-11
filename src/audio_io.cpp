@@ -1,5 +1,4 @@
 #include "audio_io.h"
-#include "demucs.hpp"
 #include <libnyquist/Common.h>
 #include <libnyquist/Decoders.h>
 #include <libnyquist/Encoders.h>
@@ -10,23 +9,15 @@
 namespace fs = std::filesystem;
 using namespace nqr;
 
-static const char* stem_name(int idx) {
-    static const char* names[] = {
-        "drums", "bass", "other", "vocals", "guitar", "piano"
-    };
-    if (idx >= 0 && idx < 6) return names[idx];
-    return "unknown";
-}
-
-Eigen::MatrixXf audio_io::load(const std::string& path) {
+Eigen::MatrixXf audio_io::load(const std::string& path, int expected_sample_rate) {
     auto file_data = std::make_shared<AudioData>();
     NyquistIO loader;
     loader.Load(file_data.get(), path);
 
-    if (file_data->sampleRate != demucsonnx::SUPPORTED_SAMPLE_RATE) {
+    if (file_data->sampleRate != expected_sample_rate) {
         throw std::runtime_error(
             "Unsupported sample rate: " + std::to_string(file_data->sampleRate)
-            + " (need " + std::to_string(demucsonnx::SUPPORTED_SAMPLE_RATE) + ")");
+            + " (need " + std::to_string(expected_sample_rate) + ")");
     }
 
     if (file_data->channelCount != 2 && file_data->channelCount != 1) {
@@ -53,19 +44,21 @@ Eigen::MatrixXf audio_io::load(const std::string& path) {
 
 std::vector<StemResult> audio_io::write_stems(
     const Eigen::Tensor3dXf& targets,
-    int nb_sources,
+    const std::vector<std::string>& stem_names,
+    int sample_rate,
     const std::string& output_dir)
 {
     fs::create_directories(output_dir);
     std::vector<StemResult> results;
     long num_samples = targets.dimension(2);
+    int nb_sources = static_cast<int>(targets.dimension(0));
 
-    for (int t = 0; t < nb_sources; ++t) {
-        std::string name = stem_name(t);
+    for (int t = 0; t < nb_sources && t < static_cast<int>(stem_names.size()); ++t) {
+        const std::string& name = stem_names[t];
         fs::path out_path = fs::path(output_dir) / (name + ".wav");
 
         auto file_data = std::make_shared<AudioData>();
-        file_data->sampleRate = demucsonnx::SUPPORTED_SAMPLE_RATE;
+        file_data->sampleRate = sample_rate;
         file_data->channelCount = 2;
         file_data->samples.resize(num_samples * 2);
 

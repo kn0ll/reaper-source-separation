@@ -6,17 +6,26 @@
 
 namespace model_manager {
 
+enum class BackendType { Demucs, RoFormer };
+
 struct ModelInfo {
     std::string id;
     std::string filename;
     std::string display_name;
-    std::string stems;
+    std::string description;
+    std::vector<std::string> stem_names;
+    BackendType backend;
+    int sample_rate;
+    int chunk_size;
+    int num_overlap;
+    bool compute_residual;
     size_t expected_bytes;
 };
 
 void init(const std::string& cache_dir, const std::string& local_dir);
 
 const std::vector<ModelInfo>& available_models();
+const ModelInfo* find_model(const std::string& model_id);
 
 bool is_available(const std::string& model_id);
 

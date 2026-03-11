@@ -93,5 +93,5 @@ void tracks::create_from_result(const SeparationResult& result) {
 
     TrackList_AdjustWindows(false);
     UpdateArrange();
-    Undo_EndBlock("Separate sources", UNDO_STATE_ALL);
+    Undo_EndBlock("Separate stems", UNDO_STATE_ALL);
 }

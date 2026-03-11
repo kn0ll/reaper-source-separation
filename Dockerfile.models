@@ -1,0 +1,22 @@
+FROM python:3.11-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential curl make \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir \
+        torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+RUN pip install --no-cache-dir \
+        onnx onnxruntime onnxscript \
+        bs-roformer librosa einops pyyaml rotary-embedding-torch beartype
+
+WORKDIR /workspace
+
+COPY vendor/demucs.onnx/demucs-for-onnx vendor/demucs.onnx/demucs-for-onnx
+RUN pip install --no-cache-dir -e vendor/demucs.onnx/demucs-for-onnx
+
+COPY vendor/demucs.onnx/scripts vendor/demucs.onnx/scripts
+COPY scripts scripts
+COPY Makefile .
+
+ENTRYPOINT ["make"]

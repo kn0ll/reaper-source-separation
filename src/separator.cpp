@@ -1,10 +1,10 @@
 #include "separator.h"
 #include "audio_io.h"
-#include "demucs.hpp"
-#include <onnxruntime/core/session/onnxruntime_cxx_api.h>
-#include <algorithm>
+#include "backend.h"
+#include "demucs_backend.h"
+#include "roformer_backend.h"
+#include "model_manager.h"
 #include <filesystem>
-#include <fstream>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -23,10 +23,9 @@ static SeparationResult              g_result;
 
 static std::thread                   g_thread;
 
-static std::mutex                    g_model_mutex;
-static demucsonnx::demucs_model      g_model;
-static std::string                   g_loaded_model_path;
-static bool                          g_loaded_with_gpu = false;
+static std::mutex                    g_backend_mutex;
+static std::unique_ptr<DemucsBackend>    g_demucs;
+static std::unique_ptr<RoFormerBackend>  g_roformer;
 
 static fs::path temp_parent_dir() {
     return fs::temp_directory_path() / "reaper_stem_separation_plugin";
@@ -46,63 +45,43 @@ static void set_status(const std::string& msg) {
     g_status = msg;
 }
 
-static bool try_cuda_provider(Ort::SessionOptions& opts) {
-    auto providers = Ort::GetAvailableProviders();
-    fprintf(stderr, "[reaper-stem-separation-plugin] available providers:");
-    for (const auto& p : providers) fprintf(stderr, " %s", p.c_str());
-    fprintf(stderr, "\n");
-
-    if (std::find(providers.begin(), providers.end(), "CUDAExecutionProvider") == providers.end())
-        return false;
-    try {
-        OrtCUDAProviderOptions cuda_opts{};
-        cuda_opts.cudnn_conv_algo_search = OrtCudnnConvAlgoSearchDefault;
-        opts.AppendExecutionProvider_CUDA(cuda_opts);
-        fprintf(stderr, "[reaper-stem-separation-plugin] CUDA provider attached\n");
-        return true;
-    } catch (const std::exception& e) {
-        fprintf(stderr, "[reaper-stem-separation-plugin] CUDA provider failed: %s\n", e.what());
-        return false;
-    } catch (...) {
-        fprintf(stderr, "[reaper-stem-separation-plugin] CUDA provider failed (unknown error)\n");
-        return false;
-    }
-}
-
 static void worker(SeparationRequest req) {
     try {
         g_progress.store(0.0f);
 
-        bool using_gpu = false;
+        auto* info = model_manager::find_model(req.model_id);
+        if (!info)
+            throw std::runtime_error("Unknown model: " + req.model_id);
+
+        bool use_gpu = true;
+
+        set_status("Loading model...");
+
+        Eigen::Tensor3dXf targets;
+        std::vector<std::string> stem_names = info->stem_names;
+        int sample_rate = info->sample_rate;
+
         {
-            std::lock_guard<std::mutex> lk(g_model_mutex);
+            std::lock_guard<std::mutex> lk(g_backend_mutex);
 
-            Ort::SessionOptions opts;
-            opts.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
-            using_gpu = try_cuda_provider(opts);
-            if (!using_gpu)
-                opts.SetExecutionMode(ExecutionMode::ORT_PARALLEL);
-
-            set_status(using_gpu ? "Loading model (GPU)..." : "Loading model...");
-
-            if (g_loaded_model_path != req.model_path || g_loaded_with_gpu != using_gpu) {
-                std::ifstream f(req.model_path, std::ios::binary | std::ios::ate);
-                if (!f) throw std::runtime_error("Cannot open model: " + req.model_path);
-
-                std::streamsize sz = f.tellg();
-                f.seekg(0, std::ios::beg);
-                std::vector<char> data(sz);
-                if (!f.read(data.data(), sz))
-                    throw std::runtime_error("Failed to read model file");
-
-                g_model = demucsonnx::demucs_model{};
-                if (!demucsonnx::load_model(data, g_model, opts))
-                    throw std::runtime_error("Failed to load ONNX model");
-
-                g_loaded_model_path = req.model_path;
-                g_loaded_with_gpu = using_gpu;
-                fprintf(stderr, "[reaper-stem-separation-plugin] using %s for inference\n",
-                        using_gpu ? "GPU (CUDA)" : "CPU");
+            if (info->backend == model_manager::BackendType::Demucs) {
+                if (!g_demucs) g_demucs = std::make_unique<DemucsBackend>();
+                if (!g_demucs->is_loaded() || g_demucs->loaded_path() != req.model_path
+                    || g_demucs->loaded_with_gpu() != use_gpu) {
+                    g_demucs->load(req.model_path, use_gpu);
+                }
+            } else {
+                if (!g_roformer) g_roformer = std::make_unique<RoFormerBackend>();
+                RoFormerBackend::Config cfg;
+                cfg.chunk_size = info->chunk_size;
+                cfg.num_overlap = info->num_overlap;
+                cfg.num_stems = static_cast<int>(info->stem_names.size())
+                                - (info->compute_residual ? 1 : 0);
+                cfg.compute_residual = info->compute_residual;
+                if (!g_roformer->is_loaded() || g_roformer->loaded_path() != req.model_path
+                    || g_roformer->loaded_with_gpu() != use_gpu) {
+                    g_roformer->load(req.model_path, use_gpu, cfg);
+                }
             }
         }
 
@@ -111,25 +90,22 @@ static void worker(SeparationRequest req) {
         g_progress.store(0.05f);
         set_status("Reading audio...");
 
-        Eigen::MatrixXf audio = audio_io::load(req.source_path);
-        float duration = static_cast<float>(audio.cols()) / demucsonnx::SUPPORTED_SAMPLE_RATE;
+        Eigen::MatrixXf audio = audio_io::load(req.source_path, sample_rate);
+        float duration = static_cast<float>(audio.cols()) / static_cast<float>(sample_rate);
         g_progress.store(0.10f);
         char dur_buf[128];
-        snprintf(dur_buf, sizeof(dur_buf), "Separating %.1fs of audio%s...",
-                 duration, using_gpu ? " (GPU)" : "");
+        snprintf(dur_buf, sizeof(dur_buf), "Separating %.1fs of audio...", duration);
         set_status(dur_buf);
 
         if (g_cancel.load()) throw std::runtime_error("Cancelled");
 
         int seg_count = 0;
-        float prev_p = -1.0f;
         int total_segs = 0;
 
-        demucsonnx::ProgressCallback cb = [&](float p, const std::string&) {
+        ProgressCallback cb = [&](float p, const std::string&) {
             if (g_cancel.load()) throw std::runtime_error("Cancelled");
             ++seg_count;
 
-            // Estimate total segments from the first callback's progress increment
             if (total_segs == 0 && p > 0.0f)
                 total_segs = static_cast<int>(std::round(1.0f / p));
 
@@ -139,45 +115,14 @@ static void worker(SeparationRequest req) {
                 set_status("Separating segment " + std::to_string(seg_count) + "/" + std::to_string(total_segs) + "...");
             else
                 set_status("Separating...");
-
-            prev_p = p;
         };
 
-        Eigen::Tensor3dXf targets;
         {
-            std::lock_guard<std::mutex> lk(g_model_mutex);
-            try {
-                targets = demucsonnx::demucs_inference(g_model, audio, cb);
-            } catch (const std::exception& e) {
-                if (!using_gpu) throw;
-                fprintf(stderr, "[reaper-stem-separation-plugin] GPU inference failed: %s\n", e.what());
-                fprintf(stderr, "[reaper-stem-separation-plugin] falling back to CPU\n");
-                set_status("GPU failed, reloading on CPU...");
-
-                Ort::SessionOptions cpu_opts;
-                cpu_opts.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
-                cpu_opts.SetExecutionMode(ExecutionMode::ORT_PARALLEL);
-
-                std::ifstream f2(req.model_path, std::ios::binary | std::ios::ate);
-                if (!f2) throw std::runtime_error("Cannot open model: " + req.model_path);
-                std::streamsize sz2 = f2.tellg();
-                f2.seekg(0, std::ios::beg);
-                std::vector<char> data2(sz2);
-                if (!f2.read(data2.data(), sz2))
-                    throw std::runtime_error("Failed to read model file");
-
-                g_model = demucsonnx::demucs_model{};
-                if (!demucsonnx::load_model(data2, g_model, cpu_opts))
-                    throw std::runtime_error("Failed to load ONNX model on CPU");
-                g_loaded_with_gpu = false;
-
-                seg_count = 0;
-                total_segs = 0;
-                prev_p = -1.0f;
-                using_gpu = false;
-                set_status("Separating on CPU...");
-                targets = demucsonnx::demucs_inference(g_model, audio, cb);
-            }
+            std::lock_guard<std::mutex> lk(g_backend_mutex);
+            if (info->backend == model_manager::BackendType::Demucs)
+                targets = g_demucs->infer(audio, cb);
+            else
+                targets = g_roformer->infer(audio, cb);
         }
 
         if (g_cancel.load()) throw std::runtime_error("Cancelled");
@@ -186,7 +131,7 @@ static void worker(SeparationRequest req) {
         set_status("Writing stem files...");
 
         std::string out_dir = make_output_dir();
-        auto stems = audio_io::write_stems(targets, g_model.nb_sources, out_dir);
+        auto stems = audio_io::write_stems(targets, stem_names, sample_rate, out_dir);
 
         SeparationResult res;
         res.request = req;
@@ -264,10 +209,9 @@ void separator::reset() {
 }
 
 void separator::cleanup_model() {
-    std::lock_guard<std::mutex> lk(g_model_mutex);
-    g_model = demucsonnx::demucs_model{};
-    g_loaded_model_path.clear();
-    g_loaded_with_gpu = false;
+    std::lock_guard<std::mutex> lk(g_backend_mutex);
+    g_demucs.reset();
+    g_roformer.reset();
 }
 
 void separator::cleanup_temp_files() {

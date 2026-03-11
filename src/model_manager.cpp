@@ -17,8 +17,46 @@ namespace fs = std::filesystem;
 #endif
 
 static const std::vector<model_manager::ModelInfo> g_known_models = {
-    {"htdemucs",    "htdemucs.ort",    "HTDemucs - drums, bass, other, vocals",                 "drums, bass, other, vocals",                209'900'000},
-    {"htdemucs_6s", "htdemucs_6s.ort", "HTDemucs - drums, bass, other, vocals, guitar, piano", "drums, bass, other, vocals, guitar, piano", 143'900'000},
+    {
+        "bs_roformer_vocals",
+        "bs_roformer_vocals.onnx",
+        "Vocals (Best quality)",
+        "Isolate vocals with the highest possible clarity",
+        {"vocals", "instrumental"},
+        model_manager::BackendType::RoFormer,
+        44100, 960000, 4, true,
+        900'000'000
+    },
+    {
+        "melband_roformer_vocals",
+        "melband_roformer_vocals.onnx",
+        "Vocals (Fast)",
+        "Quick vocal isolation, great for previewing",
+        {"vocals", "instrumental"},
+        model_manager::BackendType::RoFormer,
+        44100, 352800, 2, true,
+        900'000'000
+    },
+    {
+        "htdemucs_ft",
+        "htdemucs_ft.ort",
+        "All Stems",
+        "Split a track into its 4 core parts",
+        {"drums", "bass", "other", "vocals"},
+        model_manager::BackendType::Demucs,
+        44100, 0, 0, false,
+        210'000'000
+    },
+    {
+        "htdemucs_6s",
+        "htdemucs_6s.ort",
+        "All Stems + Guitar & Piano",
+        "Split a track into 6 parts including guitar and piano",
+        {"drums", "bass", "other", "vocals", "guitar", "piano"},
+        model_manager::BackendType::Demucs,
+        44100, 0, 0, false,
+        144'000'000
+    },
 };
 
 static std::string g_cache_dir;
@@ -32,7 +70,7 @@ static std::string          g_dl_error;
 static std::string          g_dl_temp_path;
 static std::thread          g_dl_thread;
 
-static const model_manager::ModelInfo* find_model(const std::string& id) {
+const model_manager::ModelInfo* model_manager::find_model(const std::string& id) {
     for (auto& m : g_known_models)
         if (m.id == id) return &m;
     return nullptr;
@@ -42,10 +80,6 @@ static std::string find_local_path(const model_manager::ModelInfo& info) {
     if (!g_local_dir.empty()) {
         fs::path p = fs::path(g_local_dir) / info.filename;
         if (fs::exists(p)) return p.string();
-        // Also check for .with_runtime_opt variant
-        std::string opt_name = info.id + ".with_runtime_opt.ort";
-        fs::path opt = fs::path(g_local_dir) / opt_name;
-        if (fs::exists(opt)) return opt.string();
     }
     return {};
 }
@@ -84,7 +118,7 @@ std::string model_manager::model_path(const std::string& model_id) {
 }
 
 static void download_worker(std::string model_id) {
-    auto* info = find_model(model_id);
+    auto* info = model_manager::find_model(model_id);
     if (!info) {
         std::lock_guard<std::mutex> lk(g_dl_mutex);
         g_dl_error = "Unknown model: " + model_id;
@@ -106,7 +140,6 @@ static void download_worker(std::string model_id) {
 
     fprintf(stderr, "[reaper-stem-separation-plugin] downloading %s\n", url.c_str());
 
-    // Monitor file size on a separate polling loop within this thread
     std::atomic<bool> curl_done{false};
     std::thread monitor([&]() {
         while (!curl_done.load()) {
@@ -143,7 +176,6 @@ static void download_worker(std::string model_id) {
         return;
     }
 
-    // Move temp to final
     std::error_code ec;
     fs::rename(temp, dest, ec);
     if (ec) {

@@ -111,20 +111,20 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: actions/setup-python@v5
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build model converter image
+        uses: docker/build-push-action@v6
         with:
-          python-version: "3.11"
+          context: .
+          file: Dockerfile.models
+          tags: models:latest
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Install conversion deps
-        run: |
-          pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
-          pip install -e vendor/demucs.onnx/demucs-for-onnx onnx onnxruntime onnxscript
-
-      - name: Convert 4-stem model
-        run: make models-4s
-
-      - name: Convert 6-stem model
-        run: make models-6s
+      - name: Convert all models
+        run: docker run --rm -v ${{ github.workspace }}/models:/workspace/models models:latest _models
 
       - name: Verify model files
-        run: ls -lh models/*.ort
+        run: ls -lh models/*.ort models/*.onnx

@@ -2,9 +2,17 @@ BUILD_DIR   := build
 DIST_DIR    := dist
 VENDOR_DIR  := vendor/demucs.onnx
 MODELS_DIR  := models
+STAGING_DIR := models/staging
 PYTHON      ?= python3
 ORT_VERSION ?= 1.19.2
 PROVIDER    ?= cpu
+
+# HuggingFace model URLs
+HF_BS_ROFORMER_CKPT  := https://huggingface.co/pcunwa/BS-Roformer-HyperACE/resolve/main/v2_voc/bs_roformer_voc_hyperacev2.ckpt
+HF_BS_ROFORMER_CFG   := https://huggingface.co/pcunwa/BS-Roformer-HyperACE/resolve/main/v2_voc/config.yaml
+HF_BS_ROFORMER_PY    := https://huggingface.co/pcunwa/BS-Roformer-HyperACE/resolve/main/v2_voc/bs_roformer.py
+HF_MELBAND_CKPT      := https://huggingface.co/KimberleyJSN/melbandroformer/resolve/main/MelBandRoformer.ckpt
+HF_MELBAND_CFG       := https://raw.githubusercontent.com/ZFTurbo/Music-Source-Separation-Training/main/configs/KimberleyJensen/config_vocals_mel_band_roformer_kj.yaml
 
 # Auto-detect platform
 UNAME_S := $(shell uname -s 2>/dev/null || echo Windows)
@@ -52,7 +60,9 @@ endif
 
 CMAKE_EXTRA ?=
 
-.PHONY: all plugin models models-4s models-6s ort dist _dist clean help
+.PHONY: all plugin models _models _models-demucs-ft _models-demucs-6s _models-roformer ort dist _dist clean help
+
+MODELS_IMAGE := reaper-stem-separation-models
 
 all: plugin
 
@@ -61,17 +71,57 @@ plugin:
 	cmake --build $(BUILD_DIR) --config Release
 	@echo "Built: $(BUILD_DIR)/reaper_stem_separation_plugin$(PLUGIN_EXT)"
 
-models: models-4s models-6s
+# -- Model conversion (Docker) --
 
-models-4s:
+models:
+	docker build -f Dockerfile.models -t $(MODELS_IMAGE) .
+	docker run --rm -v $(CURDIR)/models:/workspace/models $(MODELS_IMAGE) _models
+
+# -- Internal targets (run inside container) --
+
+_models: _models-demucs-ft _models-demucs-6s _models-roformer
+
+_models-demucs-ft:
 	@mkdir -p $(MODELS_DIR)
-	$(PYTHON) $(VENDOR_DIR)/scripts/convert-pth-to-onnx.py $(MODELS_DIR)
+	$(PYTHON) $(VENDOR_DIR)/scripts/convert-pth-to-onnx.py $(MODELS_DIR) --ft-vocals
 	$(PYTHON) -m onnxruntime.tools.convert_onnx_models_to_ort $(MODELS_DIR)
+	@if [ -f "$(MODELS_DIR)/htdemucs_ft_vocals.with_runtime_opt.ort" ]; then \
+		cp "$(MODELS_DIR)/htdemucs_ft_vocals.with_runtime_opt.ort" "$(MODELS_DIR)/htdemucs_ft.ort"; \
+	elif [ -f "$(MODELS_DIR)/htdemucs_ft_vocals.ort" ]; then \
+		cp "$(MODELS_DIR)/htdemucs_ft_vocals.ort" "$(MODELS_DIR)/htdemucs_ft.ort"; \
+	fi
 
-models-6s:
+_models-demucs-6s:
 	@mkdir -p $(MODELS_DIR)
 	$(PYTHON) $(VENDOR_DIR)/scripts/convert-pth-to-onnx.py $(MODELS_DIR) --six-source
 	$(PYTHON) -m onnxruntime.tools.convert_onnx_models_to_ort $(MODELS_DIR)
+	@if [ -f "$(MODELS_DIR)/htdemucs_6s.with_runtime_opt.ort" ]; then \
+		cp "$(MODELS_DIR)/htdemucs_6s.with_runtime_opt.ort" "$(MODELS_DIR)/htdemucs_6s.ort"; \
+	fi
+
+_models-roformer: _models-roformer-bs _models-roformer-mb
+
+_models-roformer-bs:
+	@mkdir -p $(STAGING_DIR)/bs_hyperace $(MODELS_DIR)
+	curl -fSL -o $(STAGING_DIR)/bs_hyperace/checkpoint.ckpt "$(HF_BS_ROFORMER_CKPT)"
+	curl -fSL -o $(STAGING_DIR)/bs_hyperace/config.yaml "$(HF_BS_ROFORMER_CFG)"
+	curl -fSL -o $(STAGING_DIR)/bs_hyperace/bs_roformer.py "$(HF_BS_ROFORMER_PY)"
+	$(PYTHON) scripts/export_onnx.py \
+		--model-type bs_roformer \
+		--checkpoint $(STAGING_DIR)/bs_hyperace/checkpoint.ckpt \
+		--config $(STAGING_DIR)/bs_hyperace/config.yaml \
+		--model-code $(STAGING_DIR)/bs_hyperace/bs_roformer.py \
+		--output $(MODELS_DIR)/bs_roformer_vocals.onnx
+
+_models-roformer-mb:
+	@mkdir -p $(STAGING_DIR)/melband $(MODELS_DIR)
+	curl -fSL -o $(STAGING_DIR)/melband/checkpoint.ckpt "$(HF_MELBAND_CKPT)"
+	curl -fSL -o $(STAGING_DIR)/melband/config.yaml "$(HF_MELBAND_CFG)"
+	$(PYTHON) scripts/export_onnx.py \
+		--model-type mel_band_roformer \
+		--checkpoint $(STAGING_DIR)/melband/checkpoint.ckpt \
+		--config $(STAGING_DIR)/melband/config.yaml \
+		--output $(MODELS_DIR)/melband_roformer_vocals.onnx
 
 ort:
 	@if [ "$(ORT_PREFIX)" = "/usr/local" ] && [ ! -d "ort/$(ORT_EXTRACT_DIR)" ]; then \
@@ -93,6 +143,7 @@ _dist: plugin
 	cp $(ORT_PREFIX)/lib/$(ORT_LIB_GLOB) $(DIST_DIR)/reaper-stem-separation-plugin/ 2>/dev/null || true
 	@# Include local models if they exist (local dev); CI has none, so this is a no-op there
 	cp $(MODELS_DIR)/*.ort $(DIST_DIR)/reaper-stem-separation-plugin/models/ 2>/dev/null || true
+	cp $(MODELS_DIR)/*.onnx $(DIST_DIR)/reaper-stem-separation-plugin/models/ 2>/dev/null || true
 ifeq ($(UNAME_S),Linux)
 	cd $(DIST_DIR)/reaper-stem-separation-plugin && \
 		for f in libonnxruntime.so.*.*.*; do \
@@ -109,18 +160,15 @@ endif
 	@echo "Packaged: $(DIST_NAME).$(ARCHIVE_FMT)"
 
 clean:
-	rm -rf $(BUILD_DIR) $(DIST_DIR) ort reaper-stem-separation-plugin-*.tar.gz reaper-stem-separation-plugin-*.zip
+	rm -rf $(BUILD_DIR) $(DIST_DIR) ort $(STAGING_DIR) reaper-stem-separation-plugin-*.tar.gz reaper-stem-separation-plugin-*.zip
 
 help:
 	@echo "Targets:"
-	@echo "  plugin        Build reaper_stem_separation_plugin (default)"
-	@echo "  models        Convert all PyTorch models to ORT format (requires Python)"
-	@echo "  models-4s     Convert 4-stem model only"
-	@echo "  models-6s     Convert 6-stem model only"
-	@echo "  dist          Build + package tarball/zip with ORT libs (+ local models if present)"
-	@echo "  clean         Remove build/dist directories"
+	@echo "  plugin    Build reaper_stem_separation_plugin (default)"
+	@echo "  models    Convert all models via Docker (Demucs + RoFormer)"
+	@echo "  dist      Build + package tarball/zip with ORT libs"
+	@echo "  clean     Remove build/dist/staging directories"
 	@echo ""
 	@echo "Variables:"
 	@echo "  ORT_PREFIX    Path to ONNX Runtime install (default: /usr/local)"
 	@echo "  PROVIDER      Execution provider tag for archive name: cpu or cuda (default: cpu)"
-	@echo "  PYTHON        Python interpreter (default: python3)"

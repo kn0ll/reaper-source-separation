@@ -64,7 +64,7 @@ static int get_track_index_for_item(MediaItem* item) {
 static void on_command() {
     int count = CountSelectedMediaItems(nullptr);
     if (count < 1) {
-        ShowMessageBox("Select an audio item first.", "Separate Sources", 0);
+        ShowMessageBox("Select an audio item first.", "Separate Stems", 0);
         return;
     }
 
@@ -73,20 +73,20 @@ static void on_command() {
 
     MediaItem_Take* take = GetActiveTake(item);
     if (!take) {
-        ShowMessageBox("No active take in selected item.", "Separate Sources", 0);
+        ShowMessageBox("No active take in selected item.", "Separate Stems", 0);
         return;
     }
 
     PCM_source* source = GetMediaItemTake_Source(take);
     if (!source) {
-        ShowMessageBox("No audio source in selected take.", "Separate Sources", 0);
+        ShowMessageBox("No audio source in selected take.", "Separate Stems", 0);
         return;
     }
 
     char filename[4096] = {};
     GetMediaSourceFileName(source, filename, sizeof(filename));
     if (filename[0] == '\0') {
-        ShowMessageBox("Selected item has no source file (e.g. MIDI).", "Separate Sources", 0);
+        ShowMessageBox("Selected item has no source file (e.g. MIDI).", "Separate Stems", 0);
         return;
     }
 
@@ -109,7 +109,7 @@ static bool hook_command(int cmd, int flag) {
 
 static void menu_hook(const char* menuidstr, HMENU menu, int flag) {
     if (flag == 0) {
-        InsertMenu(menu, GetMenuItemCount(menu), MF_BYPOSITION | MF_STRING, g_cmd_id, "Separate sources");
+        InsertMenu(menu, GetMenuItemCount(menu), MF_BYPOSITION | MF_STRING, g_cmd_id, "Separate stems");
     }
 }
 
@@ -120,7 +120,7 @@ bool actions::register_all(reaper_plugin_info_t* rec) {
     g_accel.accel.cmd = g_cmd_id;
     g_accel.accel.fVirt = 0;
     g_accel.accel.key = 0;
-    g_accel.desc = "Separate sources (Demucs)";
+    g_accel.desc = "Separate stems";
     rec->Register("gaccel", &g_accel);
 
     rec->Register("hookcommand", (void*)hook_command);

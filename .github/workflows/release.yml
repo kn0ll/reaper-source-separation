@@ -99,37 +99,34 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: actions/setup-python@v5
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build model converter image
+        uses: docker/build-push-action@v6
         with:
-          python-version: "3.11"
+          context: .
+          file: Dockerfile.models
+          tags: models:latest
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Install conversion deps
-        run: |
-          pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
-          pip install -e vendor/demucs.onnx/demucs-for-onnx onnx onnxruntime onnxscript
+      - name: Convert all models
+        run: docker run --rm -v ${{ github.workspace }}/models:/workspace/models models:latest _models
 
-      - name: Convert 4-stem model
-        run: make models-4s
-
-      - name: Convert 6-stem model
-        run: make models-6s
-
-      - name: Select optimized models
+      - name: Collect model assets
         run: |
           mkdir -p model-assets
-          for name in htdemucs htdemucs_6s; do
-            if [ -f "models/${name}.with_runtime_opt.ort" ]; then
-              cp "models/${name}.with_runtime_opt.ort" "model-assets/${name}.ort"
-            else
-              cp "models/${name}.ort" "model-assets/${name}.ort"
-            fi
-          done
+          cp models/htdemucs_ft.ort model-assets/
+          cp models/htdemucs_6s.ort model-assets/
+          cp models/bs_roformer_vocals.onnx model-assets/
+          cp models/melband_roformer_vocals.onnx model-assets/
           ls -lh model-assets/
 
       - uses: actions/upload-artifact@v4
         with:
           name: models
-          path: model-assets/*.ort
+          path: model-assets/*
 
   upload:
     needs: [build, models]
@@ -158,7 +155,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
           TAG: ${{ github.event.release.tag_name }}
         run: |
-          for model in artifacts/models/*.ort; do
+          for model in artifacts/models/*; do
             echo "Uploading $model"
             gh release upload "$TAG" "$model" --repo "$GH_REPO" --clobber
           done

@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/kn0ll/reaper-stem-separation-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/kn0ll/reaper-stem-separation-plugin/actions/workflows/ci.yml)
 
-A native REAPER extension for AI source separation. Right-click any audio item, select **Separate Sources**, and get individual stems (vocals, drums, bass, etc.) as new tracks in your project.
+AI-powered stem separation plugin for REAPER — isolate vocals, drums, bass, and more with Demucs and RoFormer, directly in your DAW.
 
 ## Table of contents
 
@@ -12,6 +12,7 @@ A native REAPER extension for AI source separation. Right-click any audio item, 
   - [Linux](#linux)
   - [macOS](#macos)
   - [Windows](#windows)
+- [Models](#models)
 - [Usage](#usage)
 - [How it works](#how-it-works)
 - [Building from source](#building-from-source)
@@ -55,19 +56,28 @@ Invoke-WebRequest https://github.com/kn0ll/reaper-stem-separation-plugin/release
 
 For GPU acceleration with an NVIDIA GPU, install the [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) and [cuDNN](https://developer.nvidia.com/cudnn). Without these, the plugin still works but runs on CPU.
 
+## Models
+
+| Model | Stems | Best for |
+|-------|-------|----------|
+| **Vocals (Best quality)** — BS-RoFormer HyperACE | Vocals + Instrumental | Cleanest vocal isolation, highest overall fidelity |
+| **Vocals (Fast)** — MelBand-RoFormer | Vocals + Instrumental | Quick vocal isolation, great for previewing |
+| **All Stems** — HTDemucs FT | Drums, Bass, Other, Vocals | Full 4-stem separation; strong drum isolation |
+| **All Stems + Guitar & Piano** — HTDemucs 6s | Drums, Bass, Other, Vocals, Guitar, Piano | Only option for guitar and piano as separate stems |
+
+Models are downloaded automatically on first use and cached in `UserPlugins/reaper-stem-separation-plugin/models/`.
+
 ## Usage
 
 1. Select an audio item in REAPER
-2. Right-click and choose **Separate Sources**
-3. Pick a model and number of threads
+2. Right-click and choose **Separate stems**
+3. Pick a model -- a short description explains what each one does
 4. Click **Separate** -- a progress bar tracks the work
 5. Stem tracks appear in your project when complete
 
 ## How it works
 
-The plugin runs source separation models directly inside REAPER using [ONNX Runtime](https://onnxruntime.ai/). Audio from the selected item is decoded, fed through the neural network, and the resulting stems are written as WAV files and imported as new tracks. All processing happens in a background thread so REAPER stays responsive.
-
-Models are stored in `UserPlugins/reaper-stem-separation-plugin/models/` and are downloaded from the GitHub Release on first use.
+The plugin supports two inference backends: **Demucs** (via the [demucs.onnx](https://github.com/sevagh/demucs.onnx) library) and **RoFormer** (direct ONNX Runtime chunked inference). Audio from the selected item is decoded, fed through the neural network, and the resulting stems are written as WAV files and imported as new tracks. All processing happens in a background thread so REAPER stays responsive.
 
 ## Building from source
 
@@ -101,10 +111,10 @@ Place model files in the repo's `models/` directory and the plugin will find the
 
 ### Converting models locally
 
-Only needed if you want to test with local model files instead of downloaded ones:
+Model conversion is handled automatically by CI during releases. To run it locally (requires Docker):
 
 ```bash
-pip install torch onnxruntime onnx
-pip install -e vendor/demucs.onnx/demucs-for-onnx
 make models
 ```
+
+This builds a self-contained Docker image with all Python dependencies, downloads checkpoints from HuggingFace, converts Demucs models to ORT format, and exports RoFormer models to ONNX. Output files land in `models/`.

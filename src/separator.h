@@ -10,6 +10,7 @@
 
 struct SeparationRequest {
     std::string source_path;
+    std::string model_id;
     std::string model_path;
     double item_position = 0.0;
     double item_length = 0.0;

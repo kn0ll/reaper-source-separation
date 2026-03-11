@@ -7,5 +7,6 @@
 #define IDC_STATUS      103
 #define IDC_SEPARATE    104
 #define IDC_CANCEL      105
+#define IDC_DESCRIPTION 106
 
 #endif
