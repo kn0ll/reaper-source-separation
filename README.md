@@ -6,6 +6,8 @@ Right click any audio item, click "Separate stems", and get individual tracks fo
 
 ![Screenshot](screenshot.png)
 
+## Contents
+
 - [Installation](#installation)
 - [GPU Acceleration](#gpu-acceleration)
 - [Models](#models)
