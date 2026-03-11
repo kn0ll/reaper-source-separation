@@ -51,6 +51,14 @@ else
 endif
 
 DIST_NAME := reaper-stem-separation-plugin-$(PLATFORM)-$(ARCH)-$(PROVIDER)
+
+ifeq ($(PLATFORM),linux)
+    INSTALL_PATH := ~/.config/REAPER/UserPlugins/
+else ifeq ($(PLATFORM),macos)
+    INSTALL_PATH := ~/Library/Application Support/REAPER/UserPlugins/
+else
+    INSTALL_PATH := %APPDATA%\\REAPER\\UserPlugins\\
+endif
 ORT_EXTRACT_DIR := $(subst .tgz,,$(subst .zip,,$(ORT_ASSET)))
 
 # Auto-download ORT into ort/ if ORT_PREFIX not explicitly set
@@ -161,6 +169,24 @@ ifeq ($(UNAME_S),Linux)
 			ln -sf libonnxruntime.so.$$major libonnxruntime.so; \
 		done 2>/dev/null || true
 endif
+	@printf '%s\n' \
+		"# reaper-stem-separation-plugin" \
+		"" \
+		"AI-powered stem separation plugin for REAPER." \
+		"https://github.com/kn0ll/reaper-stem-separation-plugin" \
+		"" \
+		"## Installation" \
+		"" \
+		"1. Extract this archive to $(INSTALL_PATH)" \
+		"2. Restart REAPER" \
+		"3. Select an audio item and choose \"Separate stems\"" \
+		"" \
+		"Models are downloaded automatically on first use." \
+		"" \
+		"## License" \
+		"" \
+		"MIT License. See https://github.com/kn0ll/reaper-stem-separation-plugin/blob/master/LICENSE" \
+		> $(DIST_DIR)/README.txt
 ifeq ($(ARCHIVE_FMT),tar.gz)
 	cd $(DIST_DIR) && tar czf ../$(DIST_NAME).tar.gz .
 else
