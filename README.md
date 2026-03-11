@@ -91,20 +91,67 @@ Models are downloaded automatically on first use, then cached `UserPlugins` for 
 
 ## Build From Source
 
+Requires CMake 3.18+, Ninja, a C++20 compiler, Eigen3, and Docker (for model conversion).
+
+<details>
+<summary>macOS</summary>
+
+```bash
+brew install cmake ninja eigen
+
+# Build the plugin and symlink to REAPER installation
+make plugin
+ln -sf "$(pwd)/build/reaper_stem_separation_plugin.dylib" ~/Library/Application\ Support/REAPER/UserPlugins/reaper_stem_separation_plugin.dylib
+
+# Download ONNX Runtime and symlink to REAPER installation
+make ort
+mkdir -p ~/Library/Application\ Support/REAPER/UserPlugins/reaper-stem-separation-plugin
+ln -sf $(pwd)/ort/*/lib/libonnxruntime* ~/Library/Application\ Support/REAPER/UserPlugins/reaper-stem-separation-plugin/
+
+# Build the models and symlink to REAPER installation
+make models
+ln -sfn "$(pwd)/models" ~/Library/Application\ Support/REAPER/UserPlugins/reaper-stem-separation-plugin/models
+```
+
+</details>
+
+<details>
+<summary>Windows</summary>
+
+Requires [Visual Studio](https://visualstudio.microsoft.com/) (for MSVC), [CMake](https://cmake.org/download/), [Ninja](https://ninja-build.org/), and [Make](https://community.chocolatey.org/packages/make) (`choco install ninja make`).
+
+```powershell
+# Build from a Visual Studio Developer Command Prompt
+make plugin
+make ort
+
+# Copy into REAPER installation
+copy build\reaper_stem_separation_plugin.dll "$env:APPDATA\REAPER\UserPlugins\"
+xcopy /E /I ort\onnxruntime-*\lib\onnxruntime*.dll "$env:APPDATA\REAPER\UserPlugins\reaper-stem-separation-plugin\"
+
+# Build models (requires Docker)
+make models
+xcopy /E /I models "$env:APPDATA\REAPER\UserPlugins\reaper-stem-separation-plugin\models\"
+```
+
+</details>
+
 <details>
 <summary>Linux</summary>
 
 ```bash
-# Build the plugin and symlink to Reaper installation
+sudo apt-get install cmake ninja-build libeigen3-dev
+
+# Build the plugin and symlink to REAPER installation
 make plugin
 ln -sf "$(pwd)/build/reaper_stem_separation_plugin.so" ~/.config/REAPER/UserPlugins/reaper_stem_separation_plugin.so
 
-# Download ONNX Runtime and symlink to Reaper installation
+# Download ONNX Runtime and symlink to REAPER installation
 make ort
 mkdir -p ~/.config/REAPER/UserPlugins/reaper-stem-separation-plugin
 ln -sf $(pwd)/ort/*/lib/libonnxruntime* ~/.config/REAPER/UserPlugins/reaper-stem-separation-plugin/
 
-# Build the models and symlink to Reaper installation
+# Build the models and symlink to REAPER installation
 make models
 ln -sfn "$(pwd)/models" ~/.config/REAPER/UserPlugins/reaper-stem-separation-plugin/models
 ```
