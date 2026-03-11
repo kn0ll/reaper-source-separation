@@ -10,7 +10,12 @@
   "customizations": {
     "vscode": {
       "extensions": ["ms-vscode.cpptools", "ms-vscode.cmake-tools"],
-      "settings": { "cmake.generator": "Ninja" }
+      "settings": { "cmake.generator": "Ninja" },
+      "files.exclude": {
+        "./build": true,
+        "./models": true,
+        "./vendor": true
+      },
     }
   }
 }

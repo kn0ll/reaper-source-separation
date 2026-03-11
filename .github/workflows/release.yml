@@ -117,7 +117,7 @@ jobs:
       - name: Collect model assets
         run: |
           mkdir -p model-assets
-          cp models/htdemucs_ft.ort model-assets/
+          cp models/htdemucs.ort model-assets/
           cp models/htdemucs_6s.ort model-assets/
           cp models/bs_roformer_vocals.onnx model-assets/
           cp models/melband_roformer_vocals.onnx model-assets/

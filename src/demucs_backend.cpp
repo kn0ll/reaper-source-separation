@@ -1,31 +1,8 @@
 #include "demucs_backend.h"
-#include <algorithm>
-#include <cstdio>
+#include "log.h"
+#include "ort_provider.h"
 #include <fstream>
 #include <stdexcept>
-
-static bool try_cuda_provider(Ort::SessionOptions& opts) {
-    auto providers = Ort::GetAvailableProviders();
-    fprintf(stderr, "[reaper-stem-separation-plugin] available providers:");
-    for (const auto& p : providers) fprintf(stderr, " %s", p.c_str());
-    fprintf(stderr, "\n");
-
-    if (std::find(providers.begin(), providers.end(), "CUDAExecutionProvider") == providers.end())
-        return false;
-    try {
-        OrtCUDAProviderOptions cuda_opts{};
-        cuda_opts.cudnn_conv_algo_search = OrtCudnnConvAlgoSearchDefault;
-        opts.AppendExecutionProvider_CUDA(cuda_opts);
-        fprintf(stderr, "[reaper-stem-separation-plugin] CUDA provider attached\n");
-        return true;
-    } catch (const std::exception& e) {
-        fprintf(stderr, "[reaper-stem-separation-plugin] CUDA provider failed: %s\n", e.what());
-        return false;
-    } catch (...) {
-        fprintf(stderr, "[reaper-stem-separation-plugin] CUDA provider failed (unknown error)\n");
-        return false;
-    }
-}
 
 static std::vector<char> read_file(const std::string& path) {
     std::ifstream f(path, std::ios::binary | std::ios::ate);
@@ -56,8 +33,8 @@ void DemucsBackend::load(const std::string& model_path, bool use_gpu) {
     loaded_path_ = model_path;
     loaded_gpu_ = gpu_ok;
     loaded_ = true;
-    fprintf(stderr, "[reaper-stem-separation-plugin] demucs using %s\n",
-            gpu_ok ? "GPU (CUDA)" : "CPU");
+    LOG("demucs loaded path=%s size=%zu provider=%s\n",
+        model_path.c_str(), data.size(), gpu_ok ? "cuda" : "cpu");
 }
 
 Eigen::Tensor3dXf DemucsBackend::infer(const Eigen::MatrixXf& audio, ProgressCallback cb) {
@@ -69,8 +46,8 @@ Eigen::Tensor3dXf DemucsBackend::infer(const Eigen::MatrixXf& audio, ProgressCal
     } catch (const std::exception& e) {
         if (!loaded_gpu_) throw;
 
-        fprintf(stderr, "[reaper-stem-separation-plugin] GPU inference failed: %s\n", e.what());
-        fprintf(stderr, "[reaper-stem-separation-plugin] falling back to CPU\n");
+        LOG("demucs GPU inference failed: %s\n", e.what());
+        LOG("demucs falling back to CPU\n");
 
         Ort::SessionOptions cpu_opts;
         cpu_opts.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);

@@ -2,6 +2,7 @@
 #define ROFORMER_BACKEND_H
 
 #include "backend.h"
+#include "stft.h"
 #include <onnxruntime/core/session/onnxruntime_cxx_api.h>
 #include <memory>
 #include <string>
@@ -9,10 +10,11 @@
 class RoFormerBackend : public ModelBackend {
 public:
     struct Config {
-        int chunk_size = 352800;    // samples per chunk (e.g. 8s at 44100)
-        int num_overlap = 4;        // overlap factor (stride = chunk_size / num_overlap)
-        int num_stems = 1;          // stems output by the ONNX model
-        bool compute_residual = true; // add mix-minus residual as extra stem
+        int chunk_size = 352800;
+        int num_overlap = 4;
+        int num_stems = 1;
+        bool compute_residual = true;
+        STFTParams stft;
     };
 
     void load(const std::string& model_path, bool use_gpu, const Config& config);

@@ -62,7 +62,7 @@ For GPU acceleration with an NVIDIA GPU, install the [CUDA Toolkit](https://deve
 |-------|-------|----------|
 | **Vocals (Best quality)** — BS-RoFormer HyperACE | Vocals + Instrumental | Cleanest vocal isolation, highest overall fidelity |
 | **Vocals (Fast)** — MelBand-RoFormer | Vocals + Instrumental | Quick vocal isolation, great for previewing |
-| **All Stems** — HTDemucs FT | Drums, Bass, Other, Vocals | Full 4-stem separation; strong drum isolation |
+| **All Stems** — HTDemucs | Drums, Bass, Other, Vocals | Full 4-stem separation; strong drum isolation |
 | **All Stems + Guitar & Piano** — HTDemucs 6s | Drums, Bass, Other, Vocals, Guitar, Piano | Only option for guitar and piano as separate stems |
 
 Models are downloaded automatically on first use and cached in `UserPlugins/reaper-stem-separation-plugin/models/`.
@@ -99,22 +99,17 @@ make dist ORT_PREFIX=/path/to/onnxruntime
 
 ## Running from source
 
-For faster iteration during development, you can symlink the built plugin instead of copying it each time:
-
 ```bash
+# Build the plugin and download ONNX Runtime
 make plugin
+make ort
+
+# Symlink plugin, ORT libs, and models into your REAPER installation
 ln -sf "$(pwd)/build/reaper_stem_separation_plugin.so" ~/.config/REAPER/UserPlugins/reaper_stem_separation_plugin.so
-ln -sfn "$(pwd)/build/reaper-stem-separation-plugin" ~/.config/REAPER/UserPlugins/reaper-stem-separation-plugin
-```
+mkdir -p ~/.config/REAPER/UserPlugins/reaper-stem-separation-plugin
+ln -sf $(pwd)/ort/*/lib/libonnxruntime* ~/.config/REAPER/UserPlugins/reaper-stem-separation-plugin/
 
-Place model files in the repo's `models/` directory and the plugin will find them there before attempting a download.
-
-### Converting models locally
-
-Model conversion is handled automatically by CI during releases. To run it locally (requires Docker):
-
-```bash
+# Build the models and symlink them
 make models
+ln -sfn "$(pwd)/models" ~/.config/REAPER/UserPlugins/reaper-stem-separation-plugin/models
 ```
-
-This builds a self-contained Docker image with all Python dependencies, downloads checkpoints from HuggingFace, converts Demucs models to ORT format, and exports RoFormer models to ONNX. Output files land in `models/`.

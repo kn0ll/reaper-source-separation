@@ -19,6 +19,7 @@
 #include "reaper_plugin_functions.h"
 
 #include "tracks.h"
+#include "log.h"
 #include <cctype>
 #include <filesystem>
 
@@ -94,4 +95,6 @@ void tracks::create_from_result(const SeparationResult& result) {
     TrackList_AdjustWindows(false);
     UpdateArrange();
     Undo_EndBlock("Separate stems", UNDO_STATE_ALL);
+    LOG("tracks created: stems=%zu insert_after=%d\n",
+        result.stems.size(), result.request.track_index);
 }

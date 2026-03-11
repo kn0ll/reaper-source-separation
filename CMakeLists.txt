@@ -69,8 +69,10 @@ set(PLUGIN_SOURCES
     src/separator.cpp
     src/audio_io.cpp
     src/tracks.cpp
+    src/ort_provider.cpp
     src/demucs_backend.cpp
     src/roformer_backend.cpp
+    src/stft.cpp
 )
 
 if(APPLE)

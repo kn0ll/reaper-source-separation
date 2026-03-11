@@ -13,6 +13,7 @@ HF_BS_ROFORMER_CFG   := https://huggingface.co/pcunwa/BS-Roformer-HyperACE/resol
 HF_BS_ROFORMER_PY    := https://huggingface.co/pcunwa/BS-Roformer-HyperACE/resolve/main/v2_voc/bs_roformer.py
 HF_MELBAND_CKPT      := https://huggingface.co/KimberleyJSN/melbandroformer/resolve/main/MelBandRoformer.ckpt
 HF_MELBAND_CFG       := https://raw.githubusercontent.com/ZFTurbo/Music-Source-Separation-Training/main/configs/KimberleyJensen/config_vocals_mel_band_roformer_kj.yaml
+HF_MELBAND_PY        := https://raw.githubusercontent.com/ZFTurbo/Music-Source-Separation-Training/main/models/bs_roformer/mel_band_roformer.py
 
 # Auto-detect platform
 UNAME_S := $(shell uname -s 2>/dev/null || echo Windows)
@@ -60,7 +61,7 @@ endif
 
 CMAKE_EXTRA ?=
 
-.PHONY: all plugin models _models _models-demucs-ft _models-demucs-6s _models-roformer ort dist _dist clean help
+.PHONY: all plugin models _models _models-demucs-4s _models-demucs-6s _models-roformer ort dist _dist clean help
 
 MODELS_IMAGE := reaper-stem-separation-models
 
@@ -75,20 +76,18 @@ plugin:
 
 models:
 	docker build -f Dockerfile.models -t $(MODELS_IMAGE) .
-	docker run --rm -v $(CURDIR)/models:/workspace/models $(MODELS_IMAGE) _models
+	docker run --rm -v $(CURDIR)/models:/workspace/models -v $(CURDIR)/scripts:/workspace/scripts:ro $(MODELS_IMAGE) _models
 
 # -- Internal targets (run inside container) --
 
-_models: _models-demucs-ft _models-demucs-6s _models-roformer
+_models: _models-demucs-4s _models-demucs-6s _models-roformer
 
-_models-demucs-ft:
+_models-demucs-4s:
 	@mkdir -p $(MODELS_DIR)
-	$(PYTHON) $(VENDOR_DIR)/scripts/convert-pth-to-onnx.py $(MODELS_DIR) --ft-vocals
+	$(PYTHON) $(VENDOR_DIR)/scripts/convert-pth-to-onnx.py $(MODELS_DIR)
 	$(PYTHON) -m onnxruntime.tools.convert_onnx_models_to_ort $(MODELS_DIR)
-	@if [ -f "$(MODELS_DIR)/htdemucs_ft_vocals.with_runtime_opt.ort" ]; then \
-		cp "$(MODELS_DIR)/htdemucs_ft_vocals.with_runtime_opt.ort" "$(MODELS_DIR)/htdemucs_ft.ort"; \
-	elif [ -f "$(MODELS_DIR)/htdemucs_ft_vocals.ort" ]; then \
-		cp "$(MODELS_DIR)/htdemucs_ft_vocals.ort" "$(MODELS_DIR)/htdemucs_ft.ort"; \
+	@if [ -f "$(MODELS_DIR)/htdemucs.with_runtime_opt.ort" ]; then \
+		cp "$(MODELS_DIR)/htdemucs.with_runtime_opt.ort" "$(MODELS_DIR)/htdemucs.ort"; \
 	fi
 
 _models-demucs-6s:
@@ -102,25 +101,35 @@ _models-demucs-6s:
 _models-roformer: _models-roformer-bs _models-roformer-mb
 
 _models-roformer-bs:
-	@mkdir -p $(STAGING_DIR)/bs_hyperace $(MODELS_DIR)
+	@mkdir -p $(STAGING_DIR)/bs_hyperace $(STAGING_DIR)/models/bs_roformer $(MODELS_DIR)
 	curl -fSL -o $(STAGING_DIR)/bs_hyperace/checkpoint.ckpt "$(HF_BS_ROFORMER_CKPT)"
 	curl -fSL -o $(STAGING_DIR)/bs_hyperace/config.yaml "$(HF_BS_ROFORMER_CFG)"
 	curl -fSL -o $(STAGING_DIR)/bs_hyperace/bs_roformer.py "$(HF_BS_ROFORMER_PY)"
-	$(PYTHON) scripts/export_onnx.py \
+	curl -fSL -o $(STAGING_DIR)/models/bs_roformer/attend.py \
+		"https://raw.githubusercontent.com/ZFTurbo/Music-Source-Separation-Training/main/models/bs_roformer/attend.py"
+	touch $(STAGING_DIR)/models/__init__.py $(STAGING_DIR)/models/bs_roformer/__init__.py
+	PYTHONPATH=$(STAGING_DIR):$$PYTHONPATH $(PYTHON) scripts/export_onnx.py \
 		--model-type bs_roformer \
 		--checkpoint $(STAGING_DIR)/bs_hyperace/checkpoint.ckpt \
 		--config $(STAGING_DIR)/bs_hyperace/config.yaml \
 		--model-code $(STAGING_DIR)/bs_hyperace/bs_roformer.py \
+		--chunk-size 352800 \
 		--output $(MODELS_DIR)/bs_roformer_vocals.onnx
 
 _models-roformer-mb:
-	@mkdir -p $(STAGING_DIR)/melband $(MODELS_DIR)
+	@mkdir -p $(STAGING_DIR)/melband $(STAGING_DIR)/models/bs_roformer $(MODELS_DIR)
 	curl -fSL -o $(STAGING_DIR)/melband/checkpoint.ckpt "$(HF_MELBAND_CKPT)"
 	curl -fSL -o $(STAGING_DIR)/melband/config.yaml "$(HF_MELBAND_CFG)"
-	$(PYTHON) scripts/export_onnx.py \
+	curl -fSL -o $(STAGING_DIR)/melband/mel_band_roformer.py "$(HF_MELBAND_PY)"
+	curl -fSL -o $(STAGING_DIR)/models/bs_roformer/attend.py \
+		"https://raw.githubusercontent.com/ZFTurbo/Music-Source-Separation-Training/main/models/bs_roformer/attend.py"
+	touch $(STAGING_DIR)/models/__init__.py $(STAGING_DIR)/models/bs_roformer/__init__.py
+	PYTHONPATH=$(STAGING_DIR):$$PYTHONPATH $(PYTHON) scripts/export_onnx.py \
 		--model-type mel_band_roformer \
 		--checkpoint $(STAGING_DIR)/melband/checkpoint.ckpt \
 		--config $(STAGING_DIR)/melband/config.yaml \
+		--model-code $(STAGING_DIR)/melband/mel_band_roformer.py \
+		--chunk-size 352800 \
 		--output $(MODELS_DIR)/melband_roformer_vocals.onnx
 
 ort:

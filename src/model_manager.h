@@ -19,10 +19,13 @@ struct ModelInfo {
     int chunk_size;
     int num_overlap;
     bool compute_residual;
+    int stft_n_fft;
+    int stft_hop_length;
+    int stft_win_length;
     size_t expected_bytes;
 };
 
-void init(const std::string& cache_dir, const std::string& local_dir);
+void init(const std::string& models_dir);
 
 const std::vector<ModelInfo>& available_models();
 const ModelInfo* find_model(const std::string& model_id);

@@ -1,4 +1,5 @@
 #include "audio_io.h"
+#include "log.h"
 #include <libnyquist/Common.h>
 #include <libnyquist/Decoders.h>
 #include <libnyquist/Encoders.h>
@@ -15,12 +16,16 @@ Eigen::MatrixXf audio_io::load(const std::string& path, int expected_sample_rate
     loader.Load(file_data.get(), path);
 
     if (file_data->sampleRate != expected_sample_rate) {
+        LOG("audio_io: sample rate mismatch: got=%d expected=%d path=%s\n",
+            file_data->sampleRate, expected_sample_rate, path.c_str());
         throw std::runtime_error(
             "Unsupported sample rate: " + std::to_string(file_data->sampleRate)
             + " (need " + std::to_string(expected_sample_rate) + ")");
     }
 
     if (file_data->channelCount != 2 && file_data->channelCount != 1) {
+        LOG("audio_io: unsupported channel count=%d path=%s\n",
+            file_data->channelCount, path.c_str());
         throw std::runtime_error("Only mono and stereo audio supported");
     }
 

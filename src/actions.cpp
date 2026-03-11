@@ -15,10 +15,10 @@
 
 #include "actions.h"
 #include "dialog.h"
+#include "log.h"
 #include "model_manager.h"
 #include "separator.h"
 #include <cstring>
-#include <cstdio>
 #include <filesystem>
 
 namespace fs = std::filesystem;
@@ -26,31 +26,9 @@ namespace fs = std::filesystem;
 static int g_cmd_id = 0;
 static gaccel_register_t g_accel;
 
-static std::string resolve_cache_dir() {
+static std::string resolve_models_dir() {
     const char* res = GetResourcePath();
     return (fs::path(res) / "UserPlugins" / "reaper-stem-separation-plugin" / "models").string();
-}
-
-static std::string resolve_local_dir() {
-#ifdef _WIN32
-    HMODULE hm = nullptr;
-    if (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
-                           GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-                           (LPCSTR)&resolve_local_dir, &hm) && hm) {
-        char path[MAX_PATH];
-        if (GetModuleFileNameA(hm, path, sizeof(path))) {
-            fs::path nearby = fs::path(path).parent_path() / "reaper-stem-separation-plugin" / "models";
-            if (fs::exists(nearby)) return nearby.string();
-        }
-    }
-#else
-    Dl_info info;
-    if (dladdr((void*)&resolve_local_dir, &info) && info.dli_fname) {
-        fs::path nearby = fs::path(info.dli_fname).parent_path() / "reaper-stem-separation-plugin" / "models";
-        if (fs::exists(nearby)) return nearby.string();
-    }
-#endif
-    return {};
 }
 
 static int get_track_index_for_item(MediaItem* item) {
@@ -126,7 +104,7 @@ bool actions::register_all(reaper_plugin_info_t* rec) {
     rec->Register("hookcommand", (void*)hook_command);
     rec->Register("hookcustommenu", (void*)menu_hook);
 
-    model_manager::init(resolve_cache_dir(), resolve_local_dir());
+    model_manager::init(resolve_models_dir());
 
     return true;
 }

@@ -2,11 +2,11 @@
 #include "audio_io.h"
 #include "backend.h"
 #include "demucs_backend.h"
+#include "log.h"
 #include "roformer_backend.h"
 #include "model_manager.h"
 #include <filesystem>
 #include <cmath>
-#include <cstdio>
 #include <cstdlib>
 #include <random>
 
@@ -55,6 +55,11 @@ static void worker(SeparationRequest req) {
 
         bool use_gpu = true;
 
+        LOG("worker: model=%s backend=%s source=%s\n",
+            req.model_id.c_str(),
+            info->backend == model_manager::BackendType::Demucs ? "demucs" : "roformer",
+            req.source_path.c_str());
+
         set_status("Loading model...");
 
         Eigen::Tensor3dXf targets;
@@ -68,6 +73,7 @@ static void worker(SeparationRequest req) {
                 if (!g_demucs) g_demucs = std::make_unique<DemucsBackend>();
                 if (!g_demucs->is_loaded() || g_demucs->loaded_path() != req.model_path
                     || g_demucs->loaded_with_gpu() != use_gpu) {
+                    LOG("loading demucs from %s\n", req.model_path.c_str());
                     g_demucs->load(req.model_path, use_gpu);
                 }
             } else {
@@ -78,8 +84,13 @@ static void worker(SeparationRequest req) {
                 cfg.num_stems = static_cast<int>(info->stem_names.size())
                                 - (info->compute_residual ? 1 : 0);
                 cfg.compute_residual = info->compute_residual;
+                cfg.stft = {info->stft_n_fft, info->stft_hop_length, info->stft_win_length};
+                LOG("roformer config: chunk=%d overlap=%d stems=%d stft_nfft=%d stft_hop=%d stft_win=%d\n",
+                    cfg.chunk_size, cfg.num_overlap, cfg.num_stems,
+                    cfg.stft.n_fft, cfg.stft.hop_length, cfg.stft.win_length);
                 if (!g_roformer->is_loaded() || g_roformer->loaded_path() != req.model_path
                     || g_roformer->loaded_with_gpu() != use_gpu) {
+                    LOG("loading roformer from %s\n", req.model_path.c_str());
                     g_roformer->load(req.model_path, use_gpu, cfg);
                 }
             }
@@ -90,7 +101,12 @@ static void worker(SeparationRequest req) {
         g_progress.store(0.05f);
         set_status("Reading audio...");
 
+        LOG("reading audio from %s\n", req.source_path.c_str());
         Eigen::MatrixXf audio = audio_io::load(req.source_path, sample_rate);
+        LOG("audio loaded: channels=%d samples=%d duration=%.1fs\n",
+            (int)audio.rows(), (int)audio.cols(),
+            (float)audio.cols() / (float)sample_rate);
+
         float duration = static_cast<float>(audio.cols()) / static_cast<float>(sample_rate);
         g_progress.store(0.10f);
         char dur_buf[128];
@@ -117,6 +133,7 @@ static void worker(SeparationRequest req) {
                 set_status("Separating...");
         };
 
+        LOG("starting inference\n");
         {
             std::lock_guard<std::mutex> lk(g_backend_mutex);
             if (info->backend == model_manager::BackendType::Demucs)
@@ -124,6 +141,8 @@ static void worker(SeparationRequest req) {
             else
                 targets = g_roformer->infer(audio, cb);
         }
+        LOG("inference done: stems=%d channels=%d samples=%d\n",
+            (int)targets.dimension(0), (int)targets.dimension(1), (int)targets.dimension(2));
 
         if (g_cancel.load()) throw std::runtime_error("Cancelled");
 
@@ -131,6 +150,7 @@ static void worker(SeparationRequest req) {
         set_status("Writing stem files...");
 
         std::string out_dir = make_output_dir();
+        LOG("writing stems to %s\n", out_dir.c_str());
         auto stems = audio_io::write_stems(targets, stem_names, sample_rate, out_dir);
 
         SeparationResult res;
@@ -147,6 +167,8 @@ static void worker(SeparationRequest req) {
         g_state.store(separator::State::Done);
 
     } catch (const std::exception& e) {
+        if (std::string(e.what()) != "Cancelled")
+            LOG("worker error: %s\n", e.what());
         std::lock_guard<std::mutex> lk(g_mutex);
         g_error = e.what();
         g_state.store(separator::State::Error);

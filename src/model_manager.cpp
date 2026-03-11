@@ -1,6 +1,6 @@
 #include "model_manager.h"
+#include "log.h"
 #include <atomic>
-#include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <mutex>
@@ -24,8 +24,9 @@ static const std::vector<model_manager::ModelInfo> g_known_models = {
         "Isolate vocals with the highest possible clarity",
         {"vocals", "instrumental"},
         model_manager::BackendType::RoFormer,
-        44100, 960000, 4, true,
-        900'000'000
+        44100, 352800, 4, true,
+        2048, 512, 2048,
+        300'000'000
     },
     {
         "melband_roformer_vocals",
@@ -35,16 +36,18 @@ static const std::vector<model_manager::ModelInfo> g_known_models = {
         {"vocals", "instrumental"},
         model_manager::BackendType::RoFormer,
         44100, 352800, 2, true,
+        2048, 441, 2048,
         900'000'000
     },
     {
-        "htdemucs_ft",
-        "htdemucs_ft.ort",
+        "htdemucs",
+        "htdemucs.ort",
         "All Stems",
         "Split a track into its 4 core parts",
         {"drums", "bass", "other", "vocals"},
         model_manager::BackendType::Demucs,
         44100, 0, 0, false,
+        0, 0, 0,
         210'000'000
     },
     {
@@ -55,12 +58,12 @@ static const std::vector<model_manager::ModelInfo> g_known_models = {
         {"drums", "bass", "other", "vocals", "guitar", "piano"},
         model_manager::BackendType::Demucs,
         44100, 0, 0, false,
+        0, 0, 0,
         144'000'000
     },
 };
 
-static std::string g_cache_dir;
-static std::string g_local_dir;
+static std::string g_models_dir;
 
 static std::atomic<model_manager::DownloadState> g_dl_state{model_manager::DownloadState::Idle};
 static std::atomic<float>   g_dl_progress{0.0f};
@@ -76,27 +79,19 @@ const model_manager::ModelInfo* model_manager::find_model(const std::string& id)
     return nullptr;
 }
 
-static std::string find_local_path(const model_manager::ModelInfo& info) {
-    if (!g_local_dir.empty()) {
-        fs::path p = fs::path(g_local_dir) / info.filename;
+static std::string find_model_file(const model_manager::ModelInfo& info) {
+    if (!g_models_dir.empty()) {
+        fs::path p = fs::path(g_models_dir) / info.filename;
         if (fs::exists(p)) return p.string();
     }
     return {};
 }
 
-static std::string find_cached_path(const model_manager::ModelInfo& info) {
-    if (!g_cache_dir.empty()) {
-        fs::path p = fs::path(g_cache_dir) / info.filename;
-        if (fs::exists(p)) return p.string();
-    }
-    return {};
-}
-
-void model_manager::init(const std::string& cache_dir, const std::string& local_dir) {
-    g_cache_dir = cache_dir;
-    g_local_dir = local_dir;
-    if (!g_cache_dir.empty())
-        fs::create_directories(g_cache_dir);
+void model_manager::init(const std::string& models_dir) {
+    g_models_dir = models_dir;
+    if (!g_models_dir.empty())
+        fs::create_directories(g_models_dir);
+    LOG("models_dir=%s models_count=%zu\n", g_models_dir.c_str(), g_known_models.size());
 }
 
 const std::vector<model_manager::ModelInfo>& model_manager::available_models() {
@@ -106,15 +101,13 @@ const std::vector<model_manager::ModelInfo>& model_manager::available_models() {
 bool model_manager::is_available(const std::string& model_id) {
     auto* info = find_model(model_id);
     if (!info) return false;
-    return !find_local_path(*info).empty() || !find_cached_path(*info).empty();
+    return !find_model_file(*info).empty();
 }
 
 std::string model_manager::model_path(const std::string& model_id) {
     auto* info = find_model(model_id);
     if (!info) return {};
-    std::string local = find_local_path(*info);
-    if (!local.empty()) return local;
-    return find_cached_path(*info);
+    return find_model_file(*info);
 }
 
 static void download_worker(std::string model_id) {
@@ -126,8 +119,8 @@ static void download_worker(std::string model_id) {
         return;
     }
 
-    fs::create_directories(g_cache_dir);
-    std::string dest = (fs::path(g_cache_dir) / info->filename).string();
+    fs::create_directories(g_models_dir);
+    std::string dest = (fs::path(g_models_dir) / info->filename).string();
     std::string temp = dest + ".tmp";
     g_dl_temp_path = temp;
 
@@ -138,7 +131,7 @@ static void download_worker(std::string model_id) {
 
     std::string cmd = "curl -fSL -o \"" + temp + "\" \"" + url + "\"";
 
-    fprintf(stderr, "[reaper-stem-separation-plugin] downloading %s\n", url.c_str());
+    LOG("download: model=%s url=%s\n", model_id.c_str(), url.c_str());
 
     std::atomic<bool> curl_done{false};
     std::thread monitor([&]() {
@@ -172,6 +165,7 @@ static void download_worker(std::string model_id) {
             g_dl_error = "Download failed: curl not found. Please install curl and ensure it is in your PATH.";
         else
             g_dl_error = "Download failed (curl exit " + std::to_string(ret) + "). Check your internet connection.";
+        LOG("download failed: model=%s curl_exit=%d\n", model_id.c_str(), ret);
         g_dl_state.store(model_manager::DownloadState::Error);
         return;
     }
@@ -182,13 +176,14 @@ static void download_worker(std::string model_id) {
         fs::remove(temp);
         std::lock_guard<std::mutex> lk(g_dl_mutex);
         g_dl_error = "Failed to save model: " + ec.message();
+        LOG("download rename failed: model=%s error=%s\n", model_id.c_str(), ec.message().c_str());
         g_dl_state.store(model_manager::DownloadState::Error);
         return;
     }
 
     g_dl_progress.store(1.0f);
     g_dl_state.store(model_manager::DownloadState::Done);
-    fprintf(stderr, "[reaper-stem-separation-plugin] downloaded %s -> %s\n", info->filename.c_str(), dest.c_str());
+    LOG("download complete: model=%s dest=%s\n", info->filename.c_str(), dest.c_str());
 }
 
 void model_manager::start_download(const std::string& model_id) {
