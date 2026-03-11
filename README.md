@@ -35,6 +35,36 @@ curl -fSL https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest
 
 </details>
 
+## GPU Acceleration
+
+The plugin runs on CPU by default. For faster processing with an NVIDIA GPU, install the CUDA runtime for your platform.
+
+<details>
+<summary>Linux</summary>
+
+```bash
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
+sudo dpkg -i cuda-keyring_1.1-1_all.deb
+sudo apt-get update
+sudo apt-get install cuda-toolkit-12 libcudnn9-cuda-12
+```
+
+</details>
+
+<details>
+<summary>Windows</summary>
+
+Install the [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) and [cuDNN](https://developer.nvidia.com/cudnn).
+
+</details>
+
+<details>
+<summary>macOS</summary>
+
+GPU acceleration is not available on macOS. The plugin runs on CPU, which is still plenty fast for most tracks.
+
+</details>
+
 ## Models
 
 | Label | Model | Stems | Use case |
@@ -70,7 +100,6 @@ ln -sf $(pwd)/ort/*/lib/libonnxruntime* ~/.config/REAPER/UserPlugins/reaper-stem
 make models
 ln -sfn "$(pwd)/models" ~/.config/REAPER/UserPlugins/reaper-stem-separation-plugin/models
 ```
-
 
 ## Table of contents
 
