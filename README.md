@@ -1,12 +1,65 @@
-# reaper-stem-separation-plugin [![Build](https://github.com/kn0ll/reaper-stem-separation-plugin/actions/workflows/build.yml/badge.svg)](https://github.com/kn0ll/reaper-stem-separation-plugin/actions/workflows/build.yml)
+# reaper-stem-separation-plugin
 
 **Download:** [macOS](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-macos-arm64-cpu.tar.gz) | [Windows](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-windows-x64-cuda.zip) | [Linux](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-linux-x64-cuda.tar.gz)
 
-Right click any audio item, click "Separate stems", and get individual tracks for vocals, drums, bass, guitar, piano, and more. Ships with the best model for each job — BS-RoFormer for vocals, HTDemucs for full-mix splits — so you don't have to choose between quality and coverage. Models are automatically downloaded on first use.
+Right click any audio item, click "Separate stems", and get individual tracks for vocals, drums, bass, guitar, piano, and more.
+
+## Installation
+
+Download the archive for your platform from the [latest release](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest), extract it into your REAPER `UserPlugins` folder, and restart REAPER.
+
+<details>
+<summary>Linux</summary>
+
+```bash
+curl -fSL https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-linux-x64-cuda.tar.gz | tar xz -C ~/.config/REAPER/UserPlugins/
+```
+
+</details>
+
+<details>
+<summary>macOS</summary>
+
+```bash
+curl -fSL https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-macos-arm64-cpu.tar.gz | tar xz -C ~/Library/Application\ Support/REAPER/UserPlugins/
+```
+
+</details>
+
+<details>
+<summary>Windows</summary>
+
+```powershell
+Invoke-WebRequest https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-windows-x64-cuda.zip -OutFile $env:TEMP\rss.zip; Expand-Archive $env:TEMP\rss.zip "$env:APPDATA\REAPER\UserPlugins" -Force; Remove-Item $env:TEMP\rss.zip
+```
+
+</details>
 
 ## Development
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/kn0ll/reaper-stem-separation-plugin)
+
+[![Build](https://github.com/kn0ll/reaper-stem-separation-plugin/actions/workflows/build.yml/badge.svg)](https://github.com/kn0ll/reaper-stem-separation-plugin/actions/workflows/build.yml)
+
+## Build From Source
+
+### Linux
+
+```bash
+# Build the plugin and symlink to Reaper installation
+make plugin
+ln -sf "$(pwd)/build/reaper_stem_separation_plugin.so" ~/.config/REAPER/UserPlugins/reaper_stem_separation_plugin.so
+
+# Download ONNX Runtime and symlink to Reaper installation
+make ort
+mkdir -p ~/.config/REAPER/UserPlugins/reaper-stem-separation-plugin
+ln -sf $(pwd)/ort/*/lib/libonnxruntime* ~/.config/REAPER/UserPlugins/reaper-stem-separation-plugin/
+
+# Build the models and symlink to Reaper installation
+make models
+ln -sfn "$(pwd)/models" ~/.config/REAPER/UserPlugins/reaper-stem-separation-plugin/models
+```
+
 
 ## Table of contents
 
@@ -97,21 +150,4 @@ Set `ORT_PREFIX` if ONNX Runtime is installed somewhere non-standard:
 
 ```bash
 make dist ORT_PREFIX=/path/to/onnxruntime
-```
-
-## Running from source
-
-```bash
-# Build the plugin and download ONNX Runtime
-make plugin
-make ort
-
-# Symlink plugin, ORT libs, and models into your REAPER installation
-ln -sf "$(pwd)/build/reaper_stem_separation_plugin.so" ~/.config/REAPER/UserPlugins/reaper_stem_separation_plugin.so
-mkdir -p ~/.config/REAPER/UserPlugins/reaper-stem-separation-plugin
-ln -sf $(pwd)/ort/*/lib/libonnxruntime* ~/.config/REAPER/UserPlugins/reaper-stem-separation-plugin/
-
-# Build the models and symlink them
-make models
-ln -sfn "$(pwd)/models" ~/.config/REAPER/UserPlugins/reaper-stem-separation-plugin/models
 ```
