@@ -13,6 +13,8 @@
       "settings": { "cmake.generator": "Ninja" },
       "files.exclude": {
         "./build": true,
+        "./dist": true,
+        "./ort": true,
         "./models": true,
         "./vendor": true
       },
