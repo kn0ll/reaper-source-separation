@@ -20,17 +20,17 @@ jobs:
             platform: linux-x64
             provider: cuda
             ort_asset: onnxruntime-linux-x64-gpu-1.19.2.tgz
-            archive: reaper-source-separation-linux-x64-cuda.tar.gz
+            archive: reaper-stem-separation-plugin-linux-x64-cuda.tar.gz
           - os: macos-14
             platform: macos-arm64
             provider: cpu
             ort_asset: onnxruntime-osx-arm64-1.19.2.tgz
-            archive: reaper-source-separation-macos-arm64-cpu.tar.gz
+            archive: reaper-stem-separation-plugin-macos-arm64-cpu.tar.gz
           - os: windows-2022
             platform: windows-x64
             provider: cuda
             ort_asset: onnxruntime-win-x64-gpu-1.19.2.zip
-            archive: reaper-source-separation-windows-x64-cuda.zip
+            archive: reaper-stem-separation-plugin-windows-x64-cuda.zip
 
     runs-on: ${{ matrix.os }}
     name: Build (${{ matrix.platform }})
@@ -147,7 +147,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
           TAG: ${{ github.event.release.tag_name }}
         run: |
-          for archive in artifacts/reaper-source-separation-*/*; do
+          for archive in artifacts/reaper-stem-separation-plugin-*/*; do
             echo "Uploading $archive"
             gh release upload "$TAG" "$archive" --repo "$GH_REPO" --clobber
           done

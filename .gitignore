@@ -3,5 +3,5 @@ dist/
 ort/
 models/
 .venv/
-reaper-source-separation-*.tar.gz
-reaper-source-separation-*.zip
+reaper-stem-separation-plugin-*.tar.gz
+reaper-stem-separation-plugin-*.zip

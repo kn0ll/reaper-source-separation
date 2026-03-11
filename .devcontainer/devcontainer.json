@@ -1,5 +1,5 @@
 {
-  "name": "reaper-source-separation",
+  "name": "reaper-stem-separation-plugin",
   "build": { "dockerfile": "Dockerfile", "context": ".." },
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
   "workspaceFolder": "/workspace",

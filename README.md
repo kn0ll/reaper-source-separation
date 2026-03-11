@@ -1,8 +1,8 @@
-# reaper-source-separation
+# reaper-stem-separation-plugin
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/kn0ll/reaper-source-separation)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/kn0ll/reaper-stem-separation-plugin)
 
-[![CI](https://github.com/kn0ll/reaper-source-separation/actions/workflows/ci.yml/badge.svg)](https://github.com/kn0ll/reaper-source-separation/actions/workflows/ci.yml)
+[![CI](https://github.com/kn0ll/reaper-stem-separation-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/kn0ll/reaper-stem-separation-plugin/actions/workflows/ci.yml)
 
 A native REAPER extension for AI source separation. Right-click any audio item, select **Separate Sources**, and get individual stems (vocals, drums, bass, etc.) as new tracks in your project.
 
@@ -20,12 +20,12 @@ A native REAPER extension for AI source separation. Right-click any audio item, 
 
 ## Install
 
-Download the archive for your platform from the [latest release](https://github.com/kn0ll/reaper-source-separation/releases/latest), extract it into your REAPER `UserPlugins` folder, and restart REAPER.
+Download the archive for your platform from the [latest release](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest), extract it into your REAPER `UserPlugins` folder, and restart REAPER.
 
 ### Linux
 
 ```bash
-curl -fSL https://github.com/kn0ll/reaper-source-separation/releases/latest/download/reaper-source-separation-linux-x64-cuda.tar.gz | tar xz -C ~/.config/REAPER/UserPlugins/
+curl -fSL https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-linux-x64-cuda.tar.gz | tar xz -C ~/.config/REAPER/UserPlugins/
 ```
 
 For GPU acceleration with an NVIDIA GPU, add the [CUDA repository](https://developer.nvidia.com/cuda-downloads) and install the runtime libraries:
@@ -42,7 +42,7 @@ Without these, the plugin still works but runs on CPU.
 ### macOS
 
 ```bash
-curl -fSL https://github.com/kn0ll/reaper-source-separation/releases/latest/download/reaper-source-separation-macos-arm64-cpu.tar.gz | tar xz -C ~/Library/Application\ Support/REAPER/UserPlugins/
+curl -fSL https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-macos-arm64-cpu.tar.gz | tar xz -C ~/Library/Application\ Support/REAPER/UserPlugins/
 ```
 
 GPU acceleration is not available on macOS. The plugin runs on CPU, which is still plenty fast for most tracks.
@@ -50,7 +50,7 @@ GPU acceleration is not available on macOS. The plugin runs on CPU, which is sti
 ### Windows
 
 ```powershell
-Invoke-WebRequest https://github.com/kn0ll/reaper-source-separation/releases/latest/download/reaper-source-separation-windows-x64-cuda.zip -OutFile $env:TEMP\rss.zip; Expand-Archive $env:TEMP\rss.zip "$env:APPDATA\REAPER\UserPlugins" -Force; Remove-Item $env:TEMP\rss.zip
+Invoke-WebRequest https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-windows-x64-cuda.zip -OutFile $env:TEMP\rss.zip; Expand-Archive $env:TEMP\rss.zip "$env:APPDATA\REAPER\UserPlugins" -Force; Remove-Item $env:TEMP\rss.zip
 ```
 
 For GPU acceleration with an NVIDIA GPU, install the [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) and [cuDNN](https://developer.nvidia.com/cudnn). Without these, the plugin still works but runs on CPU.
@@ -67,19 +67,19 @@ For GPU acceleration with an NVIDIA GPU, install the [CUDA Toolkit](https://deve
 
 The plugin runs source separation models directly inside REAPER using [ONNX Runtime](https://onnxruntime.ai/). Audio from the selected item is decoded, fed through the neural network, and the resulting stems are written as WAV files and imported as new tracks. All processing happens in a background thread so REAPER stays responsive.
 
-Models are stored in `UserPlugins/reaper-source-separation/models/` and are downloaded from the GitHub Release on first use.
+Models are stored in `UserPlugins/reaper-stem-separation-plugin/models/` and are downloaded from the GitHub Release on first use.
 
 ## Building from source
 
 Requires CMake 3.18+, Ninja, a C++20 compiler, and Eigen3.
 
 ```bash
-git clone --recurse-submodules https://github.com/kn0ll/reaper-source-separation.git
-cd reaper-source-separation
+git clone --recurse-submodules https://github.com/kn0ll/reaper-stem-separation-plugin.git
+cd reaper-stem-separation-plugin
 make dist
 ```
 
-This produces a platform archive (e.g. `reaper-source-separation-linux-x64-cpu.tar.gz`) ready to extract into `UserPlugins/`.
+This produces a platform archive (e.g. `reaper-stem-separation-plugin-linux-x64-cpu.tar.gz`) ready to extract into `UserPlugins/`.
 
 Set `ORT_PREFIX` if ONNX Runtime is installed somewhere non-standard:
 
@@ -93,8 +93,8 @@ For faster iteration during development, you can symlink the built plugin instea
 
 ```bash
 make plugin
-ln -sf "$(pwd)/build/reaper_source_separation.so" ~/.config/REAPER/UserPlugins/reaper_source_separation.so
-ln -sfn "$(pwd)/build/reaper-source-separation" ~/.config/REAPER/UserPlugins/reaper-source-separation
+ln -sf "$(pwd)/build/reaper_stem_separation_plugin.so" ~/.config/REAPER/UserPlugins/reaper_stem_separation_plugin.so
+ln -sfn "$(pwd)/build/reaper-stem-separation-plugin" ~/.config/REAPER/UserPlugins/reaper-stem-separation-plugin
 ```
 
 Place model files in the repo's `models/` directory and the plugin will find them there before attempting a download.

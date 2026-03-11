@@ -41,7 +41,7 @@ else
     endif
 endif
 
-DIST_NAME := reaper-source-separation-$(PLATFORM)-$(ARCH)-$(PROVIDER)
+DIST_NAME := reaper-stem-separation-plugin-$(PLATFORM)-$(ARCH)-$(PROVIDER)
 ORT_EXTRACT_DIR := $(subst .tgz,,$(subst .zip,,$(ORT_ASSET)))
 
 # Auto-download ORT into ort/ if ORT_PREFIX not explicitly set
@@ -59,7 +59,7 @@ all: plugin
 plugin:
 	cmake -S . -B $(BUILD_DIR) -G Ninja -DCMAKE_BUILD_TYPE=Release -DORT_PREFIX=$(ORT_PREFIX) $(CMAKE_EXTRA)
 	cmake --build $(BUILD_DIR) --config Release
-	@echo "Built: $(BUILD_DIR)/reaper_source_separation$(PLUGIN_EXT)"
+	@echo "Built: $(BUILD_DIR)/reaper_stem_separation_plugin$(PLUGIN_EXT)"
 
 models: models-4s models-6s
 
@@ -88,13 +88,13 @@ dist: ort
 
 _dist: plugin
 	rm -rf $(DIST_DIR)
-	mkdir -p $(DIST_DIR)/reaper-source-separation/models
-	cp $(BUILD_DIR)/reaper_source_separation$(PLUGIN_EXT) $(DIST_DIR)/
-	cp $(ORT_PREFIX)/lib/$(ORT_LIB_GLOB) $(DIST_DIR)/reaper-source-separation/ 2>/dev/null || true
+	mkdir -p $(DIST_DIR)/reaper-stem-separation-plugin/models
+	cp $(BUILD_DIR)/reaper_stem_separation_plugin$(PLUGIN_EXT) $(DIST_DIR)/
+	cp $(ORT_PREFIX)/lib/$(ORT_LIB_GLOB) $(DIST_DIR)/reaper-stem-separation-plugin/ 2>/dev/null || true
 	@# Include local models if they exist (local dev); CI has none, so this is a no-op there
-	cp $(MODELS_DIR)/*.ort $(DIST_DIR)/reaper-source-separation/models/ 2>/dev/null || true
+	cp $(MODELS_DIR)/*.ort $(DIST_DIR)/reaper-stem-separation-plugin/models/ 2>/dev/null || true
 ifeq ($(UNAME_S),Linux)
-	cd $(DIST_DIR)/reaper-source-separation && \
+	cd $(DIST_DIR)/reaper-stem-separation-plugin && \
 		for f in libonnxruntime.so.*.*.*; do \
 			major=$$(echo $$f | sed 's/libonnxruntime\.so\.//;s/\..*//' ); \
 			ln -sf $$f libonnxruntime.so.$$major; \
@@ -109,11 +109,11 @@ endif
 	@echo "Packaged: $(DIST_NAME).$(ARCHIVE_FMT)"
 
 clean:
-	rm -rf $(BUILD_DIR) $(DIST_DIR) ort reaper-source-separation-*.tar.gz reaper-source-separation-*.zip
+	rm -rf $(BUILD_DIR) $(DIST_DIR) ort reaper-stem-separation-plugin-*.tar.gz reaper-stem-separation-plugin-*.zip
 
 help:
 	@echo "Targets:"
-	@echo "  plugin        Build reaper_source_separation (default)"
+	@echo "  plugin        Build reaper_stem_separation_plugin (default)"
 	@echo "  models        Convert all PyTorch models to ORT format (requires Python)"
 	@echo "  models-4s     Convert 4-stem model only"
 	@echo "  models-6s     Convert 6-stem model only"

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(reaper_source_separation VERSION 0.1.0 LANGUAGES CXX)
+project(reaper_stem_separation_plugin VERSION 0.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -84,44 +84,44 @@ elseif(UNIX)
 endif()
 
 # -- Shared library target --
-add_library(reaper_source_separation SHARED
+add_library(reaper_stem_separation_plugin SHARED
     ${PLUGIN_SOURCES}
     ${DEMUCS_ONNX_SOURCES}
 )
 
-set_target_properties(reaper_source_separation PROPERTIES
+set_target_properties(reaper_stem_separation_plugin PROPERTIES
     PREFIX ""
-    OUTPUT_NAME "reaper_source_separation"
+    OUTPUT_NAME "reaper_stem_separation_plugin"
 )
 
 if(DOWNLOAD_REPO)
-    target_compile_definitions(reaper_source_separation PRIVATE
+    target_compile_definitions(reaper_stem_separation_plugin PRIVATE
         DOWNLOAD_REPO="${DOWNLOAD_REPO}"
     )
 endif()
 
 if(DOWNLOAD_TAG)
-    target_compile_definitions(reaper_source_separation PRIVATE
+    target_compile_definitions(reaper_stem_separation_plugin PRIVATE
         DOWNLOAD_TAG="${DOWNLOAD_TAG}"
     )
 endif()
 
 if(NOT WIN32)
-    target_compile_definitions(reaper_source_separation PRIVATE
+    target_compile_definitions(reaper_stem_separation_plugin PRIVATE
         SWELL_PROVIDED_BY_APP
         NOMINMAX
     )
 endif()
 
 if(WIN32)
-    target_compile_definitions(reaper_source_separation PRIVATE
+    target_compile_definitions(reaper_stem_separation_plugin PRIVATE
         NOMINMAX
         WIN32_LEAN_AND_MEAN
     )
-    target_sources(reaper_source_separation PRIVATE src/dialog_win32.rc)
+    target_sources(reaper_stem_separation_plugin PRIVATE src/dialog_win32.rc)
 endif()
 
-target_include_directories(reaper_source_separation PRIVATE
+target_include_directories(reaper_stem_separation_plugin PRIVATE
     ${SDK_DIR}
     ${WDL_DIR}
     ${DEMUCS_ONNX_DIR}/src
@@ -132,36 +132,36 @@ target_include_directories(reaper_source_separation PRIVATE
 
 
 if(Eigen3_FOUND)
-    target_link_libraries(reaper_source_separation PRIVATE Eigen3::Eigen)
+    target_link_libraries(reaper_stem_separation_plugin PRIVATE Eigen3::Eigen)
 else()
-    target_include_directories(reaper_source_separation PRIVATE ${EIGEN3_INCLUDE_DIR})
+    target_include_directories(reaper_stem_separation_plugin PRIVATE ${EIGEN3_INCLUDE_DIR})
 endif()
 
-target_link_libraries(reaper_source_separation PRIVATE
+target_link_libraries(reaper_stem_separation_plugin PRIVATE
     ${ORT_LIB}
     libnyquist
 )
 
 if(UNIX AND NOT APPLE)
-    target_link_libraries(reaper_source_separation PRIVATE pthread dl)
+    target_link_libraries(reaper_stem_separation_plugin PRIVATE pthread dl)
 elseif(APPLE)
     find_library(COCOA_FW Cocoa)
     find_library(CARBON_FW Carbon)
-    target_link_libraries(reaper_source_separation PRIVATE pthread dl ${COCOA_FW} ${CARBON_FW})
+    target_link_libraries(reaper_stem_separation_plugin PRIVATE pthread dl ${COCOA_FW} ${CARBON_FW})
 endif()
 
-# RPATH: look for ORT libs in reaper-source-separation/ next to the plugin
+# RPATH: look for ORT libs in reaper-stem-separation-plugin/ next to the plugin
 if(APPLE)
-    set_target_properties(reaper_source_separation PROPERTIES
+    set_target_properties(reaper_stem_separation_plugin PROPERTIES
         SUFFIX ".dylib"
-        INSTALL_RPATH "@loader_path/reaper-source-separation"
-        BUILD_RPATH   "@loader_path/reaper-source-separation"
+        INSTALL_RPATH "@loader_path/reaper-stem-separation-plugin"
+        BUILD_RPATH   "@loader_path/reaper-stem-separation-plugin"
     )
 elseif(UNIX)
-    set_target_properties(reaper_source_separation PROPERTIES
-        INSTALL_RPATH "$ORIGIN/reaper-source-separation"
-        BUILD_RPATH   "$ORIGIN/reaper-source-separation"
+    set_target_properties(reaper_stem_separation_plugin PROPERTIES
+        INSTALL_RPATH "$ORIGIN/reaper-stem-separation-plugin"
+        BUILD_RPATH   "$ORIGIN/reaper-stem-separation-plugin"
     )
 endif()
 
-install(TARGETS reaper_source_separation LIBRARY DESTINATION . RUNTIME DESTINATION .)
+install(TARGETS reaper_stem_separation_plugin LIBRARY DESTINATION . RUNTIME DESTINATION .)

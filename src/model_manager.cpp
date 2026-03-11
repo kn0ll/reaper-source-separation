@@ -9,7 +9,7 @@
 namespace fs = std::filesystem;
 
 #ifndef DOWNLOAD_REPO
-#define DOWNLOAD_REPO "kn0ll/reaper-source-separation"
+#define DOWNLOAD_REPO "kn0ll/reaper-stem-separation-plugin"
 #endif
 
 #ifndef DOWNLOAD_TAG
@@ -104,7 +104,7 @@ static void download_worker(std::string model_id) {
 
     std::string cmd = "curl -fSL -o \"" + temp + "\" \"" + url + "\"";
 
-    fprintf(stderr, "[reaper-source-separation] downloading %s\n", url.c_str());
+    fprintf(stderr, "[reaper-stem-separation-plugin] downloading %s\n", url.c_str());
 
     // Monitor file size on a separate polling loop within this thread
     std::atomic<bool> curl_done{false};
@@ -156,7 +156,7 @@ static void download_worker(std::string model_id) {
 
     g_dl_progress.store(1.0f);
     g_dl_state.store(model_manager::DownloadState::Done);
-    fprintf(stderr, "[reaper-source-separation] downloaded %s -> %s\n", info->filename.c_str(), dest.c_str());
+    fprintf(stderr, "[reaper-stem-separation-plugin] downloaded %s -> %s\n", info->filename.c_str(), dest.c_str());
 }
 
 void model_manager::start_download(const std::string& model_id) {

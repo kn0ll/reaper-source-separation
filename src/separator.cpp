@@ -29,7 +29,7 @@ static std::string                   g_loaded_model_path;
 static bool                          g_loaded_with_gpu = false;
 
 static fs::path temp_parent_dir() {
-    return fs::temp_directory_path() / "reaper_source_separation";
+    return fs::temp_directory_path() / "reaper_stem_separation_plugin";
 }
 
 static std::string make_output_dir() {
@@ -48,7 +48,7 @@ static void set_status(const std::string& msg) {
 
 static bool try_cuda_provider(Ort::SessionOptions& opts) {
     auto providers = Ort::GetAvailableProviders();
-    fprintf(stderr, "[reaper-source-separation] available providers:");
+    fprintf(stderr, "[reaper-stem-separation-plugin] available providers:");
     for (const auto& p : providers) fprintf(stderr, " %s", p.c_str());
     fprintf(stderr, "\n");
 
@@ -58,13 +58,13 @@ static bool try_cuda_provider(Ort::SessionOptions& opts) {
         OrtCUDAProviderOptions cuda_opts{};
         cuda_opts.cudnn_conv_algo_search = OrtCudnnConvAlgoSearchDefault;
         opts.AppendExecutionProvider_CUDA(cuda_opts);
-        fprintf(stderr, "[reaper-source-separation] CUDA provider attached\n");
+        fprintf(stderr, "[reaper-stem-separation-plugin] CUDA provider attached\n");
         return true;
     } catch (const std::exception& e) {
-        fprintf(stderr, "[reaper-source-separation] CUDA provider failed: %s\n", e.what());
+        fprintf(stderr, "[reaper-stem-separation-plugin] CUDA provider failed: %s\n", e.what());
         return false;
     } catch (...) {
-        fprintf(stderr, "[reaper-source-separation] CUDA provider failed (unknown error)\n");
+        fprintf(stderr, "[reaper-stem-separation-plugin] CUDA provider failed (unknown error)\n");
         return false;
     }
 }
@@ -101,7 +101,7 @@ static void worker(SeparationRequest req) {
 
                 g_loaded_model_path = req.model_path;
                 g_loaded_with_gpu = using_gpu;
-                fprintf(stderr, "[reaper-source-separation] using %s for inference\n",
+                fprintf(stderr, "[reaper-stem-separation-plugin] using %s for inference\n",
                         using_gpu ? "GPU (CUDA)" : "CPU");
             }
         }
@@ -150,8 +150,8 @@ static void worker(SeparationRequest req) {
                 targets = demucsonnx::demucs_inference(g_model, audio, cb);
             } catch (const std::exception& e) {
                 if (!using_gpu) throw;
-                fprintf(stderr, "[reaper-source-separation] GPU inference failed: %s\n", e.what());
-                fprintf(stderr, "[reaper-source-separation] falling back to CPU\n");
+                fprintf(stderr, "[reaper-stem-separation-plugin] GPU inference failed: %s\n", e.what());
+                fprintf(stderr, "[reaper-stem-separation-plugin] falling back to CPU\n");
                 set_status("GPU failed, reloading on CPU...");
 
                 Ort::SessionOptions cpu_opts;

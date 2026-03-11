@@ -28,7 +28,7 @@ static gaccel_register_t g_accel;
 
 static std::string resolve_cache_dir() {
     const char* res = GetResourcePath();
-    return (fs::path(res) / "UserPlugins" / "reaper-source-separation" / "models").string();
+    return (fs::path(res) / "UserPlugins" / "reaper-stem-separation-plugin" / "models").string();
 }
 
 static std::string resolve_local_dir() {
@@ -39,14 +39,14 @@ static std::string resolve_local_dir() {
                            (LPCSTR)&resolve_local_dir, &hm) && hm) {
         char path[MAX_PATH];
         if (GetModuleFileNameA(hm, path, sizeof(path))) {
-            fs::path nearby = fs::path(path).parent_path() / "reaper-source-separation" / "models";
+            fs::path nearby = fs::path(path).parent_path() / "reaper-stem-separation-plugin" / "models";
             if (fs::exists(nearby)) return nearby.string();
         }
     }
 #else
     Dl_info info;
     if (dladdr((void*)&resolve_local_dir, &info) && info.dli_fname) {
-        fs::path nearby = fs::path(info.dli_fname).parent_path() / "reaper-source-separation" / "models";
+        fs::path nearby = fs::path(info.dli_fname).parent_path() / "reaper-stem-separation-plugin" / "models";
         if (fs::exists(nearby)) return nearby.string();
     }
 #endif
