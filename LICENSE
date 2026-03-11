@@ -59,8 +59,11 @@ https://gitlab.com/libeigen/eigen
 
 Eigen is primarily licensed under the MPL2. Some files contain third-party
 code under BSD or other MPL2-compatible licenses. The full MPL2 text is
-available at https://www.mozilla.org/en-US/MPL/2.0/. Eigen source code is
-available via the vendor/demucs.onnx/vendor/eigen submodule.
+available at https://www.mozilla.org/en-US/MPL/2.0/.
+
+As required by MPL-2.0 Section 3.2, the Eigen source code used by this
+project is available at https://gitlab.com/libeigen/eigen (the specific
+version is pinned in vendor/demucs.onnx/vendor/eigen).
 
 ===============================================================================
 demucs.onnx -- MIT License
@@ -89,6 +92,7 @@ SOFTWARE.
 
 ===============================================================================
 REAPER SDK -- Zlib License
+Copyright (C) 2006-2015, Cockos Incorporated
 https://github.com/justinfrankel/reaper-sdk
 ===============================================================================
 
