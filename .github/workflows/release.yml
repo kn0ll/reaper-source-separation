@@ -36,6 +36,10 @@ jobs:
     name: Build (${{ matrix.platform }})
 
     steps:
+      - name: Enable long paths (Windows)
+        if: runner.os == 'Windows'
+        run: git config --system core.longpaths true
+
       - uses: actions/checkout@v4
         with:
           submodules: recursive
