@@ -39,12 +39,12 @@ curl -fSL https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest
 
 | Label | Model | Stems | Use case |
 |-------|-------|-------|----------|
-| **Vocals (Best quality)** | BS-RoFormer HyperACE | Vocals + Instrumental | Cleanest vocal isolation, highest fidelity |
-| **Vocals (Fast)** | MelBand-RoFormer | Vocals + Instrumental | Quick vocal isolation, great for previewing |
-| **All Stems** | HTDemucs | Drums, Bass, Other, Vocals | Full 4-stem separation, strong drum isolation |
-| **All Stems + Guitar & Piano** | HTDemucs 6s | Drums, Bass, Other, Vocals, Guitar, Piano | Guitar and piano as separate stems |
+| **Vocals (Best quality)** | [BS-RoFormer HyperACE](https://huggingface.co/pcunwa/BS-Roformer-HyperACE) | Vocals + Instrumental | Cleanest vocal isolation, highest fidelity |
+| **Vocals (Fast)** | [MelBand-RoFormer](https://huggingface.co/KimberleyJSN/melbandroformer) | Vocals + Instrumental | Quick vocal isolation, great for previewing |
+| **All Stems** | [HTDemucs](https://github.com/facebookresearch/demucs) | Drums, Bass, Other, Vocals | Full 4-stem separation, strong drum isolation |
+| **All Stems + Guitar & Piano** | [HTDemucs 6s](https://github.com/facebookresearch/demucs) | Drums, Bass, Other, Vocals, Guitar, Piano | Guitar and piano as separate stems |
 
-Models are downloaded automatically on first use and cached in `UserPlugins/reaper-stem-separation-plugin/models/`.
+Models are downloaded automatically on first use, then cached `UserPlugins` for future use.
 
 ## Development
 
