@@ -1,4 +1,4 @@
-# reaper-stem-separation-plugin
+# REAPER Stem Separation Plugin
 
 **Download:** [macOS](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-macos-arm64-cpu.tar.gz) | [Windows](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-windows-x64-cuda.zip) | [Linux](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-linux-x64-cuda.tar.gz)
 
