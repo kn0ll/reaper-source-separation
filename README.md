@@ -111,6 +111,7 @@ Requires a C++20 compiler, CMake 3.18+, Ninja, Eigen3. Optionally requires [Dock
 <summary>macOS</summary>
 
 ```bash
+# Required dependencies (if not using Devcontainer)
 brew install cmake ninja eigen
 
 # Build the plugin and symlink to REAPER installation
@@ -159,6 +160,7 @@ xcopy /E /I models "$env:APPDATA\REAPER\UserPlugins\reaper-stem-separation-plugi
 <summary>Linux</summary>
 
 ```bash
+# Required dependencies (if not using Devcontainer)
 sudo apt-get install cmake ninja-build libeigen3-dev
 
 # Build the plugin and symlink to REAPER installation
