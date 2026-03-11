@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if(MSVC)
-    add_compile_options(/W4 /WX)
+    add_compile_options(/W4 /WX /Zc:preprocessor)
 else()
     # -ffast-math: intentional for audio DSP performance (relaxes IEEE 754 strictness)
     set(CMAKE_CXX_FLAGS_RELEASE "-O3 -ffast-math -flto -DNDEBUG")
@@ -129,11 +129,13 @@ set_target_properties(reaper_stem_separation_plugin PROPERTIES
     OUTPUT_NAME "reaper_stem_separation_plugin"
 )
 
-# Suppress warnings on vendor source files compiled in the main target
+# Suppress warnings on vendor source files / vendor-macro-generated files
 if(APPLE)
     set_source_files_properties(${WDL_DIR}/WDL/swell/swell-modstub.mm PROPERTIES COMPILE_OPTIONS "-w")
+    set_source_files_properties(src/swell_resgen.cpp PROPERTIES COMPILE_OPTIONS "-w")
 elseif(UNIX)
     set_source_files_properties(${WDL_DIR}/WDL/swell/swell-modstub-generic.cpp PROPERTIES COMPILE_OPTIONS "-w")
+    set_source_files_properties(src/swell_resgen.cpp PROPERTIES COMPILE_OPTIONS "-w")
 endif()
 
 if(DOWNLOAD_REPO)
