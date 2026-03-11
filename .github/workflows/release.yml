@@ -18,19 +18,16 @@ jobs:
         include:
           - os: ubuntu-22.04
             platform: linux-x64
-            provider: cuda
-            ort_asset: onnxruntime-linux-x64-gpu-1.19.2.tgz
-            archive: reaper-stem-separation-plugin-linux-x64-cuda.tar.gz
+            ort_asset: onnxruntime-linux-x64-1.19.2.tgz
+            plugin: reaper_stem_separation_plugin.so
           - os: macos-14
             platform: macos-arm64
-            provider: cpu
             ort_asset: onnxruntime-osx-arm64-1.19.2.tgz
-            archive: reaper-stem-separation-plugin-macos-arm64-cpu.tar.gz
+            plugin: reaper_stem_separation_plugin.dylib
           - os: windows-2022
             platform: windows-x64
-            provider: cuda
-            ort_asset: onnxruntime-win-x64-gpu-1.19.2.zip
-            archive: reaper-stem-separation-plugin-windows-x64-cuda.zip
+            ort_asset: onnxruntime-win-x64-1.19.2.zip
+            plugin: reaper_stem_separation_plugin.dll
 
     runs-on: ${{ matrix.os }}
     name: Build (${{ matrix.platform }})
@@ -85,14 +82,14 @@ jobs:
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Build & package
+      - name: Build
         shell: bash
-        run: make dist ORT_PREFIX="$ORT_PREFIX" PROVIDER="${{ matrix.provider }}" CMAKE_EXTRA="-DDOWNLOAD_REPO=${{ github.repository }} -DDOWNLOAD_TAG=${{ github.event.release.tag_name }}"
+        run: make plugin ORT_PREFIX="$ORT_PREFIX" CMAKE_EXTRA="-DDOWNLOAD_REPO=${{ github.repository }} -DDOWNLOAD_TAG=${{ github.event.release.tag_name }}"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.archive }}
-          path: dist/${{ matrix.archive }}
+          name: ${{ matrix.plugin }}
+          path: build/${{ matrix.plugin }}
 
   models:
     runs-on: ubuntu-22.04
@@ -142,15 +139,17 @@ jobs:
         with:
           path: artifacts
 
-      - name: Upload platform archives
+      - name: Upload plugin binaries
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           TAG: ${{ github.event.release.tag_name }}
         run: |
-          for archive in artifacts/reaper-stem-separation-plugin-*/*; do
-            echo "Uploading $archive"
-            gh release upload "$TAG" "$archive" --repo "$GH_REPO" --clobber
+          for plugin in reaper_stem_separation_plugin.so reaper_stem_separation_plugin.dylib reaper_stem_separation_plugin.dll; do
+            if [ -f "artifacts/$plugin/$plugin" ]; then
+              echo "Uploading $plugin"
+              gh release upload "$TAG" "artifacts/$plugin/$plugin" --repo "$GH_REPO" --clobber
+            fi
           done
 
       - name: Upload model files
@@ -163,3 +162,43 @@ jobs:
             echo "Uploading $model"
             gh release upload "$TAG" "$model" --repo "$GH_REPO" --clobber
           done
+
+  update-index:
+    needs: [upload]
+    runs-on: ubuntu-22.04
+    name: Update ReaPack index
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - name: Update index.xml
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+          REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          VERSION="${TAG#v}"
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          BASE_URL="https://github.com/${REPO}/releases/download/${TAG}"
+
+          # Build the new version XML block
+          read -r -d '' VERSION_BLOCK << XMLEOF || true
+            <version name="${VERSION}" author="kn0ll" time="${TIMESTAMP}">
+              <source platform="linux64" file="reaper_stem_separation_plugin.so">${BASE_URL}/reaper_stem_separation_plugin.so</source>
+              <source platform="darwin-arm64" file="reaper_stem_separation_plugin.dylib">${BASE_URL}/reaper_stem_separation_plugin.dylib</source>
+              <source platform="win64" file="reaper_stem_separation_plugin.dll">${BASE_URL}/reaper_stem_separation_plugin.dll</source>
+            </version>
+          XMLEOF
+
+          # Insert before the marker comment
+          awk -v block="$VERSION_BLOCK" '/<!-- VERSIONS_END -->/{print block}1' index.xml > index.xml.tmp
+          mv index.xml.tmp index.xml
+
+      - name: Commit and push
+        run: |
+          git add index.xml
+          git diff --cached --quiet && exit 0
+          git commit -m "Update ReaPack index for ${{ github.event.release.tag_name }}"
+          git push

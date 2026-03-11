@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<index version="1" name="Stem Separation">
+  <category name="Extensions">
+    <reapack name="reaper_stem_separation_plugin.ext" type="extension" desc="Stem Separation">
+      <version name="0.1.0" author="kn0ll">
+        <source platform="linux64" file="reaper_stem_separation_plugin.so">https://github.com/kn0ll/reaper-stem-separation-plugin/releases/download/v0.1.0/reaper_stem_separation_plugin.so</source>
+        <source platform="darwin-arm64" file="reaper_stem_separation_plugin.dylib">https://github.com/kn0ll/reaper-stem-separation-plugin/releases/download/v0.1.0/reaper_stem_separation_plugin.dylib</source>
+        <source platform="win64" file="reaper_stem_separation_plugin.dll">https://github.com/kn0ll/reaper-stem-separation-plugin/releases/download/v0.1.0/reaper_stem_separation_plugin.dll</source>
+        <changelog><![CDATA[Initial ReaPack release. ONNX Runtime and models download automatically on first use.]]></changelog>
+      </version>
+      <!-- VERSIONS_END -->
+      <metadata>
+        <link rel="website">https://github.com/kn0ll/reaper-stem-separation-plugin</link>
+        <description><![CDATA[{\rtf1 AI-powered stem separation for REAPER. Right click any audio item, choose "Separate stems", and get individual tracks for vocals, drums, bass, guitar, piano, and more.}]]></description>
+      </metadata>
+    </reapack>
+  </category>
+  <metadata>
+    <link rel="website">https://github.com/kn0ll/reaper-stem-separation-plugin</link>
+  </metadata>
+</index>

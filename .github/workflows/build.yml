@@ -16,7 +16,7 @@ jobs:
         include:
           - os: ubuntu-22.04
             platform: linux-x64
-            ort_asset: onnxruntime-linux-x64-gpu-1.19.2.tgz
+            ort_asset: onnxruntime-linux-x64-1.19.2.tgz
             plugin: reaper_stem_separation_plugin.so
           - os: macos-14
             platform: macos-arm64
@@ -24,7 +24,7 @@ jobs:
             plugin: reaper_stem_separation_plugin.dylib
           - os: windows-2022
             platform: windows-x64
-            ort_asset: onnxruntime-win-x64-gpu-1.19.2.zip
+            ort_asset: onnxruntime-win-x64-1.19.2.zip
             plugin: reaper_stem_separation_plugin.dll
 
     runs-on: ${{ matrix.os }}
@@ -90,11 +90,15 @@ jobs:
 
       - name: Verify linkage (Linux)
         if: runner.os == 'Linux'
-        run: ldd build/${{ matrix.plugin }}
+        run: |
+          ldd build/${{ matrix.plugin }}
+          ! ldd build/${{ matrix.plugin }} | grep -q onnxruntime
 
       - name: Verify linkage (macOS)
         if: runner.os == 'macOS'
-        run: otool -L build/${{ matrix.plugin }}
+        run: |
+          otool -L build/${{ matrix.plugin }}
+          ! otool -L build/${{ matrix.plugin }} | grep -q onnxruntime
 
       - name: Verify linkage (Windows)
         if: runner.os == 'Windows'

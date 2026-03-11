@@ -5,7 +5,6 @@ MODELS_DIR  := models
 STAGING_DIR := models/staging
 PYTHON      ?= python3
 ORT_VERSION ?= 1.19.2
-PROVIDER    ?= cpu
 
 # HuggingFace model URLs
 HF_BS_ROFORMER_CKPT  := https://huggingface.co/pcunwa/BS-Roformer-HyperACE/resolve/main/v2_voc/bs_roformer_voc_hyperacev2.ckpt
@@ -23,34 +22,18 @@ ifeq ($(UNAME_S),Darwin)
     PLATFORM      := macos
     ARCH          := $(if $(filter arm64,$(UNAME_M)),arm64,x64)
     PLUGIN_EXT    := .dylib
-    ORT_LIB_GLOB  := libonnxruntime*.dylib
-    ARCHIVE_FMT   := tar.gz
     ORT_ASSET     := onnxruntime-osx-$(ARCH)-$(ORT_VERSION).tgz
 else ifeq ($(UNAME_S),Linux)
     PLATFORM      := linux
     ARCH          := x64
     PLUGIN_EXT    := .so
-    ORT_LIB_GLOB  := libonnxruntime*.so*
-    ARCHIVE_FMT   := tar.gz
-    ifeq ($(PROVIDER),cuda)
-        ORT_ASSET := onnxruntime-linux-x64-gpu-$(ORT_VERSION).tgz
-    else
-        ORT_ASSET := onnxruntime-linux-x64-$(ORT_VERSION).tgz
-    endif
+    ORT_ASSET     := onnxruntime-linux-x64-$(ORT_VERSION).tgz
 else
     PLATFORM      := windows
     ARCH          := x64
     PLUGIN_EXT    := .dll
-    ORT_LIB_GLOB  := onnxruntime*.dll
-    ARCHIVE_FMT   := zip
-    ifeq ($(PROVIDER),cuda)
-        ORT_ASSET := onnxruntime-win-x64-gpu-$(ORT_VERSION).zip
-    else
-        ORT_ASSET := onnxruntime-win-x64-$(ORT_VERSION).zip
-    endif
+    ORT_ASSET     := onnxruntime-win-x64-$(ORT_VERSION).zip
 endif
-
-DIST_NAME := reaper-stem-separation-plugin-$(PLATFORM)-$(ARCH)-$(PROVIDER)
 
 ifeq ($(PLATFORM),linux)
     INSTALL_PATH := ~/.config/REAPER/UserPlugins/
@@ -151,49 +134,14 @@ ort:
 	fi
 
 dist: ort
-	$(MAKE) _dist ORT_PREFIX=$(ORT_PREFIX) PROVIDER=$(PROVIDER) CMAKE_EXTRA='$(CMAKE_EXTRA)'
+	$(MAKE) _dist ORT_PREFIX=$(ORT_PREFIX) CMAKE_EXTRA='$(CMAKE_EXTRA)'
 
 _dist: plugin
 	rm -rf $(DIST_DIR)
-	mkdir -p $(DIST_DIR)/reaper-stem-separation-plugin/models
+	mkdir -p $(DIST_DIR)
 	cp $(BUILD_DIR)/reaper_stem_separation_plugin$(PLUGIN_EXT) $(DIST_DIR)/
-	cp $(ORT_PREFIX)/lib/$(ORT_LIB_GLOB) $(DIST_DIR)/reaper-stem-separation-plugin/ 2>/dev/null || true
-	@# Include local models if they exist (local dev); CI has none, so this is a no-op there
-	cp $(MODELS_DIR)/*.ort $(DIST_DIR)/reaper-stem-separation-plugin/models/ 2>/dev/null || true
-	cp $(MODELS_DIR)/*.onnx $(DIST_DIR)/reaper-stem-separation-plugin/models/ 2>/dev/null || true
-ifeq ($(UNAME_S),Linux)
-	cd $(DIST_DIR)/reaper-stem-separation-plugin && \
-		for f in libonnxruntime.so.*.*.*; do \
-			major=$$(echo $$f | sed 's/libonnxruntime\.so\.//;s/\..*//' ); \
-			ln -sf $$f libonnxruntime.so.$$major; \
-			ln -sf libonnxruntime.so.$$major libonnxruntime.so; \
-		done 2>/dev/null || true
-endif
 	cp LICENSE $(DIST_DIR)/
-	@printf '%s\n' \
-		"# reaper-stem-separation-plugin" \
-		"" \
-		"AI-powered stem separation plugin for REAPER." \
-		"https://github.com/kn0ll/reaper-stem-separation-plugin" \
-		"" \
-		"## Installation" \
-		"" \
-		"1. Extract this archive to $(INSTALL_PATH)" \
-		"2. Restart REAPER" \
-		"3. Select an audio item and choose \"Separate stems\"" \
-		"" \
-		"Models are downloaded automatically on first use." \
-		"" \
-		"## License" \
-		"" \
-		"MIT License. See LICENSE for full license and third-party notices." \
-		> $(DIST_DIR)/README.txt
-ifeq ($(ARCHIVE_FMT),tar.gz)
-	cd $(DIST_DIR) && tar czf $(DIST_NAME).tar.gz .
-else
-	cd $(DIST_DIR) && 7z a -tzip $(DIST_NAME).zip .
-endif
-	@echo "Packaged: $(DIST_DIR)/$(DIST_NAME).$(ARCHIVE_FMT)"
+	@echo "Output: $(DIST_DIR)/reaper_stem_separation_plugin$(PLUGIN_EXT)"
 
 clean:
 	rm -rf $(BUILD_DIR) $(DIST_DIR) ort $(STAGING_DIR)
@@ -202,9 +150,9 @@ help:
 	@echo "Targets:"
 	@echo "  plugin    Build reaper_stem_separation_plugin (default)"
 	@echo "  models    Convert all models via Docker (Demucs + RoFormer)"
-	@echo "  dist      Build + package tarball/zip with ORT libs"
+	@echo "  ort       Download ONNX Runtime headers for compilation"
+	@echo "  dist      Build plugin binary into dist/"
 	@echo "  clean     Remove build/dist/staging directories"
 	@echo ""
 	@echo "Variables:"
 	@echo "  ORT_PREFIX    Path to ONNX Runtime install (default: /usr/local)"
-	@echo "  PROVIDER      Execution provider tag for archive name: cpu or cuda (default: cpu)"

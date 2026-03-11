@@ -10,6 +10,7 @@
 
 #include "dialog.h"
 #include "model_manager.h"
+#include "ort_manager.h"
 #include "resource.h"
 #include "tracks.h"
 #include <algorithm>
@@ -28,7 +29,7 @@ static SeparationRequest g_request;
 
 static constexpr int kStatusBufLen = 512;
 
-enum class DialogMode { Idle, Downloading, Separating };
+enum class DialogMode { Idle, DownloadingOrt, Downloading, Separating };
 static DialogMode g_mode = DialogMode::Idle;
 static bool g_cancelling = false;
 static std::string g_pending_model_id;
@@ -69,7 +70,10 @@ static void reset_to_idle(HWND hwnd) {
 }
 
 static void force_close() {
-    if (g_mode == DialogMode::Downloading) {
+    if (g_mode == DialogMode::DownloadingOrt) {
+        ort_manager::cancel_download();
+        plugin_register("-timer", (void*)timer_callback);
+    } else if (g_mode == DialogMode::Downloading) {
         model_manager::cancel_download();
         plugin_register("-timer", (void*)timer_callback);
     } else if (g_mode == DialogMode::Separating) {
@@ -81,7 +85,36 @@ static void force_close() {
     dialog::close();
 }
 
+static void begin_model_check(HWND hwnd);
+
 static void update_ui(HWND hwnd) {
+    if (g_mode == DialogMode::DownloadingOrt) {
+        auto ds = ort_manager::download_state();
+
+        if (!g_cancelling) {
+            float prog = ort_manager::download_progress();
+            int pct = (int)(prog * 100.0f);
+            char buf[kStatusBufLen];
+            snprintf(buf, sizeof(buf), "[%d%%] Downloading ONNX Runtime...", pct);
+            SetDlgItemText(hwnd, IDC_STATUS, buf);
+            SendDlgItemMessage(hwnd, IDC_PROGRESS, PBM_SETPOS, pct, 0);
+        }
+
+        if (ds == ort_manager::DownloadState::Done) {
+            ort_manager::reset_download();
+            g_cancelling = false;
+            begin_model_check(hwnd);
+        } else if (ds == ort_manager::DownloadState::Idle && g_cancelling) {
+            reset_to_idle(hwnd);
+        } else if (ds == ort_manager::DownloadState::Error) {
+            std::string err = ort_manager::download_error();
+            ort_manager::reset_download();
+            reset_to_idle(hwnd);
+            ShowMessageBox(err.c_str(), "Download Error", 0);
+        }
+        return;
+    }
+
     if (g_mode == DialogMode::Downloading) {
         auto ds = model_manager::download_state();
 
@@ -155,6 +188,24 @@ static void timer_callback() {
     if (g_dialog) update_ui(g_dialog);
 }
 
+static void begin_model_check(HWND hwnd) {
+    auto* info = get_selected_model(hwnd);
+    if (!info) return;
+
+    if (!model_manager::is_available(info->id)) {
+        g_mode = DialogMode::Downloading;
+        g_pending_model_id = info->id;
+        SetDlgItemText(hwnd, IDC_STATUS, "Downloading model...");
+        model_manager::start_download(info->id);
+        return;
+    }
+
+    g_mode = DialogMode::Separating;
+    g_request.model_id = info->id;
+    g_request.model_path = model_manager::model_path(info->id);
+    separator::start(g_request);
+}
+
 static void start_separation(HWND hwnd) {
     auto* info = get_selected_model(hwnd);
     if (!info) {
@@ -165,18 +216,16 @@ static void start_separation(HWND hwnd) {
     set_controls_enabled(hwnd, false);
     plugin_register("timer", (void*)timer_callback);
 
-    if (!model_manager::is_available(info->id)) {
-        g_mode = DialogMode::Downloading;
+    if (!ort_manager::is_available()) {
+        g_mode = DialogMode::DownloadingOrt;
         g_pending_model_id = info->id;
-        SetDlgItemText(hwnd, IDC_STATUS, "Starting download...");
-        model_manager::start_download(info->id);
+        SetDlgItemText(hwnd, IDC_STATUS, "Downloading ONNX Runtime...");
+        ort_manager::start_download();
         return;
     }
 
-    g_mode = DialogMode::Separating;
-    g_request.model_id = info->id;
-    g_request.model_path = model_manager::model_path(info->id);
-    separator::start(g_request);
+    g_pending_model_id = info->id;
+    begin_model_check(hwnd);
 }
 
 static INT_PTR WINAPI dialog_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM /*lParam*/) {
@@ -194,7 +243,9 @@ static INT_PTR WINAPI dialog_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM /*l
             start_separation(hwnd);
             return TRUE;
         case IDC_CANCEL:
-            if (g_mode == DialogMode::Downloading) {
+            if (g_mode == DialogMode::DownloadingOrt) {
+                ort_manager::cancel_download();
+            } else if (g_mode == DialogMode::Downloading) {
                 model_manager::cancel_download();
             } else if (g_mode == DialogMode::Separating) {
                 separator::cancel();
@@ -231,6 +282,7 @@ void dialog::open(const SeparationRequest& req) {
     g_mode = DialogMode::Idle;
     g_cancelling = false;
     separator::reset();
+    ort_manager::reset_download();
     model_manager::reset_download();
 
     g_dialog = CreateDialogParam(g_hInst, MAKEINTRESOURCE(IDD_SEPARATE),

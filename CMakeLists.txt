@@ -25,12 +25,9 @@ if(NOT WIN32)
     endif()
 endif()
 
-# -- ONNX Runtime --
-# Prefer ORT_PREFIX for CI reproducibility; fall back to system search
+# -- ONNX Runtime (headers only -- library loaded at runtime via dlopen/LoadLibrary) --
 if(ORT_PREFIX)
-    set(ORT_LIB_DIR "${ORT_PREFIX}/lib")
     set(ORT_INC_DIR "${ORT_PREFIX}/include")
-    find_library(ORT_LIB NAMES onnxruntime PATHS "${ORT_LIB_DIR}" NO_DEFAULT_PATH REQUIRED)
     set(ORT_INCLUDE "${ORT_INC_DIR}")
 
     # ORT release tarballs have headers flat in include/.
@@ -48,7 +45,6 @@ if(ORT_PREFIX)
         endforeach()
     endif()
 else()
-    find_library(ORT_LIB NAMES onnxruntime REQUIRED)
     find_path(ORT_INCLUDE NAMES onnxruntime_cxx_api.h REQUIRED)
 endif()
 
@@ -75,6 +71,8 @@ set(PLUGIN_SOURCES
     src/actions.cpp
     src/dialog.cpp
     src/model_manager.cpp
+    src/ort_loader.cpp
+    src/ort_manager.cpp
     src/separator.cpp
     src/audio_io.cpp
     src/tracks.cpp
@@ -103,6 +101,7 @@ set_target_properties(demucs_onnx_vendor PROPERTIES
     CXX_STANDARD_REQUIRED ON
     POSITION_INDEPENDENT_CODE ON
 )
+target_compile_definitions(demucs_onnx_vendor PRIVATE ORT_API_MANUAL_INIT)
 target_include_directories(demucs_onnx_vendor PRIVATE
     ${DEMUCS_ONNX_DIR}/src
     ${ORT_INCLUDE}
@@ -137,6 +136,8 @@ elseif(UNIX)
     set_source_files_properties(${WDL_DIR}/WDL/swell/swell-modstub-generic.cpp PROPERTIES COMPILE_OPTIONS "-w")
     set_source_files_properties(src/swell_resgen.cpp PROPERTIES COMPILE_OPTIONS "-w")
 endif()
+
+target_compile_definitions(reaper_stem_separation_plugin PRIVATE ORT_API_MANUAL_INIT)
 
 if(DOWNLOAD_REPO)
     target_compile_definitions(reaper_stem_separation_plugin PRIVATE
@@ -184,7 +185,6 @@ else()
 endif()
 
 target_link_libraries(reaper_stem_separation_plugin PRIVATE
-    ${ORT_LIB}
     libnyquist
 )
 
@@ -196,17 +196,9 @@ elseif(APPLE)
     target_link_libraries(reaper_stem_separation_plugin PRIVATE pthread dl ${COCOA_FW} ${CARBON_FW})
 endif()
 
-# RPATH: look for ORT libs in reaper-stem-separation-plugin/ next to the plugin
 if(APPLE)
     set_target_properties(reaper_stem_separation_plugin PROPERTIES
         SUFFIX ".dylib"
-        INSTALL_RPATH "@loader_path/reaper-stem-separation-plugin"
-        BUILD_RPATH   "@loader_path/reaper-stem-separation-plugin"
-    )
-elseif(UNIX)
-    set_target_properties(reaper_stem_separation_plugin PROPERTIES
-        INSTALL_RPATH "$ORIGIN/reaper-stem-separation-plugin"
-        BUILD_RPATH   "$ORIGIN/reaper-stem-separation-plugin"
     )
 endif()
 

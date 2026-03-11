@@ -17,6 +17,7 @@
 #include "dialog.h"
 #include "log.h"
 #include "model_manager.h"
+#include "ort_manager.h"
 #include "separator.h"
 #include <cstring>
 #include <filesystem>
@@ -26,9 +27,8 @@ namespace fs = std::filesystem;
 static int g_cmd_id = 0;
 static gaccel_register_t g_accel;
 
-static std::string resolve_models_dir() {
-    const char* res = GetResourcePath();
-    return (fs::path(res) / "UserPlugins" / "reaper-stem-separation-plugin" / "models").string();
+static fs::path resolve_plugin_dir() {
+    return fs::path(GetResourcePath()) / "UserPlugins" / "reaper-stem-separation-plugin";
 }
 
 static int get_track_index_for_item(MediaItem* item) {
@@ -105,7 +105,9 @@ bool actions::register_all(reaper_plugin_info_t* rec) {
     rec->Register("hookcommand", (void*)hook_command);
     rec->Register("hookcustommenu", (void*)menu_hook);
 
-    model_manager::init(resolve_models_dir());
+    auto plugin_dir = resolve_plugin_dir();
+    ort_manager::init((plugin_dir).string());
+    model_manager::init((plugin_dir / "models").string());
 
     return true;
 }

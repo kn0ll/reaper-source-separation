@@ -1,6 +1,6 @@
 # REAPER Stem Separation Plugin
 
-**Download:** [macOS](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-macos-arm64-cpu.tar.gz) | [Windows](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-windows-x64-cuda.zip) | [Linux](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-linux-x64-cuda.tar.gz)
+**Download:** [macOS](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper_stem_separation_plugin.dylib) | [Windows](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper_stem_separation_plugin.dll) | [Linux](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper_stem_separation_plugin.so)
 
 Right click any audio item, click "Separate stems", and get individual tracks for vocals, drums, bass, guitar, piano, and more.
 
@@ -16,13 +16,24 @@ Right click any audio item, click "Separate stems", and get individual tracks fo
 
 ## Installation
 
-Download the archive for your platform from the [latest release](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest), extract it into your REAPER `UserPlugins` folder, and restart REAPER.
+Download the plugin binary for your platform from the [latest release](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest), place it in your REAPER `UserPlugins` folder, and restart REAPER.
+
+<details>
+<summary>ReaPack</summary>
+
+1. **Extensions > ReaPack > Import repositories...**
+2. Paste: `https://raw.githubusercontent.com/kn0ll/reaper-stem-separation-plugin/master/index.xml`
+3. **Extensions > ReaPack > Browse packages**, search "Stem Separation", click Install
+4. Restart REAPER
+
+</details>
 
 <details>
 <summary>macOS</summary>
 
 ```bash
-curl -fSL https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-macos-arm64-cpu.tar.gz | tar xz -C ~/Library/Application\ Support/REAPER/UserPlugins/
+curl -fSL -o ~/Library/Application\ Support/REAPER/UserPlugins/reaper_stem_separation_plugin.dylib \
+  https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper_stem_separation_plugin.dylib
 ```
 
 </details>
@@ -31,7 +42,7 @@ curl -fSL https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest
 <summary>Windows</summary>
 
 ```powershell
-Invoke-WebRequest https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-windows-x64-cuda.zip -OutFile $env:TEMP\rss.zip; Expand-Archive $env:TEMP\rss.zip "$env:APPDATA\REAPER\UserPlugins" -Force; Remove-Item $env:TEMP\rss.zip
+Invoke-WebRequest https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper_stem_separation_plugin.dll -OutFile "$env:APPDATA\REAPER\UserPlugins\reaper_stem_separation_plugin.dll"
 ```
 
 </details>
@@ -40,10 +51,12 @@ Invoke-WebRequest https://github.com/kn0ll/reaper-stem-separation-plugin/release
 <summary>Linux</summary>
 
 ```bash
-curl -fSL https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-linux-x64-cuda.tar.gz | tar xz -C ~/.config/REAPER/UserPlugins/
+curl -fSL -o ~/.config/REAPER/UserPlugins/reaper_stem_separation_plugin.so \
+  https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper_stem_separation_plugin.so
 ```
 
 </details>
+
 
 ## GPU Acceleration
 
@@ -91,7 +104,7 @@ sudo apt-get install cuda-toolkit-12 libcudnn9-cuda-12
 | **Vocals, Drums, Bass, Other** | [HTDemucs](https://github.com/facebookresearch/demucs) |
 | **Vocals, Drums, Bass, Other, Guitar, Piano** | [HTDemucs 6s](https://github.com/facebookresearch/demucs) |
 
-Models are downloaded automatically on first use, then cached `UserPlugins` for future use.
+ONNX Runtime and models are downloaded automatically on first use, then cached in `UserPlugins` for future use.
 
 ## Development
 
@@ -118,13 +131,9 @@ brew install cmake ninja eigen
 make plugin
 ln -sf "$(pwd)/build/reaper_stem_separation_plugin.dylib" ~/Library/Application\ Support/REAPER/UserPlugins/reaper_stem_separation_plugin.dylib
 
-# Download ONNX Runtime and symlink to REAPER installation
-make ort
-mkdir -p ~/Library/Application\ Support/REAPER/UserPlugins/reaper-stem-separation-plugin
-ln -sf $(pwd)/ort/*/lib/libonnxruntime* ~/Library/Application\ Support/REAPER/UserPlugins/reaper-stem-separation-plugin/
-
-# Build the models and symlink to REAPER installation
+# Build the models and symlink to REAPER installation (optional, downloaded on first use)
 make models
+mkdir -p ~/Library/Application\ Support/REAPER/UserPlugins/reaper-stem-separation-plugin
 ln -sfn "$(pwd)/models" ~/Library/Application\ Support/REAPER/UserPlugins/reaper-stem-separation-plugin/models
 ```
 
@@ -143,13 +152,11 @@ Then from a **Developer Command Prompt**:
 
 ```powershell
 make plugin
-make ort
 
 # Copy into REAPER installation
 copy build\reaper_stem_separation_plugin.dll "$env:APPDATA\REAPER\UserPlugins\"
-xcopy /E /I ort\onnxruntime-*\lib\onnxruntime*.dll "$env:APPDATA\REAPER\UserPlugins\reaper-stem-separation-plugin\"
 
-# Build models (requires Docker)
+# Build models (optional, requires Docker, downloaded on first use)
 make models
 xcopy /E /I models "$env:APPDATA\REAPER\UserPlugins\reaper-stem-separation-plugin\models\"
 ```
@@ -167,13 +174,9 @@ sudo apt-get install cmake ninja-build libeigen3-dev
 make plugin
 ln -sf "$(pwd)/build/reaper_stem_separation_plugin.so" ~/.config/REAPER/UserPlugins/reaper_stem_separation_plugin.so
 
-# Download ONNX Runtime and symlink to REAPER installation
-make ort
-mkdir -p ~/.config/REAPER/UserPlugins/reaper-stem-separation-plugin
-ln -sf $(pwd)/ort/*/lib/libonnxruntime* ~/.config/REAPER/UserPlugins/reaper-stem-separation-plugin/
-
-# Build the models and symlink to REAPER installation
+# Build the models and symlink to REAPER installation (optional, downloaded on first use)
 make models
+mkdir -p ~/.config/REAPER/UserPlugins/reaper-stem-separation-plugin
 ln -sfn "$(pwd)/models" ~/.config/REAPER/UserPlugins/reaper-stem-separation-plugin/models
 ```
 
