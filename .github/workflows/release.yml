@@ -92,7 +92,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.archive }}
-          path: ${{ matrix.archive }}
+          path: dist/${{ matrix.archive }}
 
   models:
     runs-on: ubuntu-22.04

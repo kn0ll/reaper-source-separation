@@ -189,14 +189,14 @@ endif
 		"MIT License. See LICENSE for full license and third-party notices." \
 		> $(DIST_DIR)/README.txt
 ifeq ($(ARCHIVE_FMT),tar.gz)
-	cd $(DIST_DIR) && tar czf ../$(DIST_NAME).tar.gz .
+	cd $(DIST_DIR) && tar czf $(DIST_NAME).tar.gz .
 else
-	cd $(DIST_DIR) && 7z a -tzip ../$(DIST_NAME).zip .
+	cd $(DIST_DIR) && 7z a -tzip $(DIST_NAME).zip .
 endif
-	@echo "Packaged: $(DIST_NAME).$(ARCHIVE_FMT)"
+	@echo "Packaged: $(DIST_DIR)/$(DIST_NAME).$(ARCHIVE_FMT)"
 
 clean:
-	rm -rf $(BUILD_DIR) $(DIST_DIR) ort $(STAGING_DIR) reaper-stem-separation-plugin-*.tar.gz reaper-stem-separation-plugin-*.zip
+	rm -rf $(BUILD_DIR) $(DIST_DIR) ort $(STAGING_DIR)
 
 help:
 	@echo "Targets:"
