@@ -77,7 +77,7 @@ static void on_command() {
     dialog::open(req);
 }
 
-static bool hook_command(int cmd, int flag) {
+static bool hook_command(int cmd, int /*flag*/) {
     if (cmd == g_cmd_id) {
         on_command();
         return true;
@@ -85,7 +85,7 @@ static bool hook_command(int cmd, int flag) {
     return false;
 }
 
-static void menu_hook(const char* menuidstr, HMENU menu, int flag) {
+static void menu_hook(const char* /*menuidstr*/, HMENU menu, int flag) {
     if (flag == 0) {
         InsertMenu(menu, GetMenuItemCount(menu), MF_BYPOSITION | MF_STRING, g_cmd_id, "Separate stems");
     }

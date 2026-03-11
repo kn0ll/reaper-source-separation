@@ -5,8 +5,12 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-if(NOT MSVC)
+if(MSVC)
+    add_compile_options(/W4)
+else()
+    # -ffast-math: intentional for audio DSP performance (relaxes IEEE 754 strictness)
     set(CMAKE_CXX_FLAGS_RELEASE "-O3 -ffast-math -flto -DNDEBUG")
+    add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
 # -- Vendor paths --
@@ -57,6 +61,11 @@ endif()
 # -- libnyquist --
 set(LIBNYQUIST_BUILD_EXAMPLE OFF CACHE BOOL "" FORCE)
 add_subdirectory(${DEMUCS_ONNX_DIR}/vendor/libnyquist ${CMAKE_CURRENT_BINARY_DIR}/_libnyquist)
+if(MSVC)
+    target_compile_options(libnyquist PRIVATE /w)
+else()
+    target_compile_options(libnyquist PRIVATE -w)
+endif()
 
 # -- Gather sources --
 file(GLOB DEMUCS_ONNX_SOURCES "${DEMUCS_ONNX_DIR}/src/*.cpp")
@@ -87,16 +96,45 @@ elseif(UNIX)
     )
 endif()
 
+# -- Vendor demucs.onnx (upstream submodule, compiled without project warnings) --
+add_library(demucs_onnx_vendor OBJECT ${DEMUCS_ONNX_SOURCES})
+set_target_properties(demucs_onnx_vendor PROPERTIES
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+    POSITION_INDEPENDENT_CODE ON
+)
+target_include_directories(demucs_onnx_vendor PRIVATE
+    ${DEMUCS_ONNX_DIR}/src
+    ${ORT_INCLUDE}
+)
+if(Eigen3_FOUND)
+    target_link_libraries(demucs_onnx_vendor PRIVATE Eigen3::Eigen)
+else()
+    target_include_directories(demucs_onnx_vendor PRIVATE ${EIGEN3_INCLUDE_DIR})
+endif()
+if(MSVC)
+    target_compile_options(demucs_onnx_vendor PRIVATE /w)
+else()
+    target_compile_options(demucs_onnx_vendor PRIVATE -w)
+endif()
+
 # -- Shared library target --
 add_library(reaper_stem_separation_plugin SHARED
     ${PLUGIN_SOURCES}
-    ${DEMUCS_ONNX_SOURCES}
+    $<TARGET_OBJECTS:demucs_onnx_vendor>
 )
 
 set_target_properties(reaper_stem_separation_plugin PROPERTIES
     PREFIX ""
     OUTPUT_NAME "reaper_stem_separation_plugin"
 )
+
+# Suppress warnings on vendor source files compiled in the main target
+if(APPLE)
+    set_source_files_properties(${WDL_DIR}/WDL/swell/swell-modstub.mm PROPERTIES COMPILE_OPTIONS "-w")
+elseif(UNIX)
+    set_source_files_properties(${WDL_DIR}/WDL/swell/swell-modstub-generic.cpp PROPERTIES COMPILE_OPTIONS "-w")
+endif()
 
 if(DOWNLOAD_REPO)
     target_compile_definitions(reaper_stem_separation_plugin PRIVATE
@@ -126,12 +164,14 @@ if(WIN32)
 endif()
 
 target_include_directories(reaper_stem_separation_plugin PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+)
+target_include_directories(reaper_stem_separation_plugin SYSTEM PRIVATE
     ${SDK_DIR}
     ${WDL_DIR}
     ${DEMUCS_ONNX_DIR}/src
     ${DEMUCS_ONNX_DIR}/vendor/libnyquist/include
     ${ORT_INCLUDE}
-    ${CMAKE_SOURCE_DIR}/src
 )
 
 

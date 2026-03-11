@@ -164,7 +164,7 @@ static void start_separation(HWND hwnd) {
     separator::start(g_request);
 }
 
-static INT_PTR WINAPI dialog_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+static INT_PTR WINAPI dialog_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM /*lParam*/) {
     switch (msg) {
     case WM_INITDIALOG:
         populate_models(GetDlgItem(hwnd, IDC_MODEL));
