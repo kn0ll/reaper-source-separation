@@ -96,7 +96,7 @@ bool actions::register_all(reaper_plugin_info_t* rec) {
     g_cmd_id = rec->Register("command_id", (void*)"ReaperDemucs_SeparateSources");
     if (!g_cmd_id) return false;
 
-    g_accel.accel.cmd = g_cmd_id;
+    g_accel.accel.cmd = static_cast<WORD>(g_cmd_id);
     g_accel.accel.fVirt = 0;
     g_accel.accel.key = 0;
     g_accel.desc = "Separate stems";
