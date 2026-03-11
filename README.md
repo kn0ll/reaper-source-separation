@@ -91,7 +91,7 @@ Models are downloaded automatically on first use, then cached `UserPlugins` for 
 
 ## Build From Source
 
-Requires CMake 3.18+, Ninja, a C++20 compiler, Eigen3, and Docker (for model conversion).
+Requires Git, a C++20 compiler, CMake 3.18+, Ninja, Eigen3, and [Docker](https://docs.docker.com/get-docker/) (for model conversion). Platform-specific install commands are included below.
 
 <details>
 <summary>macOS</summary>
@@ -118,10 +118,15 @@ ln -sfn "$(pwd)/models" ~/Library/Application\ Support/REAPER/UserPlugins/reaper
 <details>
 <summary>Windows</summary>
 
-Requires [Visual Studio](https://visualstudio.microsoft.com/) (for MSVC), [CMake](https://cmake.org/download/), [Ninja](https://ninja-build.org/), and [Make](https://community.chocolatey.org/packages/make) (`choco install ninja make`).
+Install [Visual Studio](https://visualstudio.microsoft.com/) (for MSVC), then from an elevated prompt:
 
 ```powershell
-# Build from a Visual Studio Developer Command Prompt
+choco install cmake ninja make -y
+```
+
+Then from a **Developer Command Prompt**:
+
+```powershell
 make plugin
 make ort
 
