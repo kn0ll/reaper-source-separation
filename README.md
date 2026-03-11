@@ -1,10 +1,12 @@
-# reaper-stem-separation-plugin
+# reaper-stem-separation-plugin [![Build](https://github.com/kn0ll/reaper-stem-separation-plugin/actions/workflows/build.yml/badge.svg)](https://github.com/kn0ll/reaper-stem-separation-plugin/actions/workflows/build.yml)
 
-**Download:** [Linux](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-linux-x64-cuda.tar.gz) | [macOS](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-macos-arm64-cpu.tar.gz) | [Windows](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-windows-x64-cuda.zip)
+**Download:** [macOS](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-macos-arm64-cpu.tar.gz) | [Windows](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-windows-x64-cuda.zip) | [Linux](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-linux-x64-cuda.tar.gz)
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/kn0ll/reaper-stem-separation-plugin) [![CI](https://github.com/kn0ll/reaper-stem-separation-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/kn0ll/reaper-stem-separation-plugin/actions/workflows/ci.yml)
+Select any audio item, click "Separate stems", and get individual tracks for vocals, drums, bass, guitar, piano, and more. Models download automatically on first use — no Python, no command line, just results.
 
-AI-powered stem separation plugin for REAPER — isolate vocals, drums, bass, and more with Demucs and RoFormer, directly in your DAW.
+## Development
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/kn0ll/reaper-stem-separation-plugin)
 
 ## Table of contents
 
