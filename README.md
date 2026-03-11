@@ -49,12 +49,19 @@ GPU acceleration is not available on macOS. The plugin runs on CPU, which is sti
 <details>
 <summary>Windows</summary>
 
-Install the [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) and [cuDNN](https://developer.nvidia.com/cudnn).
+Install the [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) and [cuDNN](https://developer.nvidia.com/cudnn), then restart REAPER.
+
+```powershell
+# After installing both, verify with:
+nvidia-smi
+```
 
 </details>
 
 <details>
 <summary>Linux</summary>
+
+Install the [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) and [cuDNN](https://docs.nvidia.com/deeplearning/cudnn/installation/linux.html), then restart REAPER.
 
 ```bash
 wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
