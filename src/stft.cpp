@@ -3,12 +3,13 @@
 #include <unsupported/Eigen/FFT>
 #include <cmath>
 #include <complex>
+#include <numbers>
 #include <vector>
 
 static Eigen::VectorXf hann_window(int size) {
     Eigen::VectorXf w(size);
     for (int i = 0; i < size; ++i)
-        w(i) = 0.5f * (1.0f - std::cos(2.0f * static_cast<float>(M_PI) * i / size));
+        w(i) = 0.5f * (1.0f - std::cos(2.0f * std::numbers::pi_v<float> * i / size));
     return w;
 }
 

@@ -4,6 +4,14 @@
 
 Right click any audio item, click "Separate stems", and get individual tracks for vocals, drums, bass, guitar, piano, and more.
 
+![Screenshot](screenshot.png)
+
+- [Installation](#installation)
+- [GPU Acceleration](#gpu-acceleration)
+- [Models](#models)
+- [Development](#development)
+- [License](#license)
+
 ## Installation
 
 Download the archive for your platform from the [latest release](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest), extract it into your REAPER `UserPlugins` folder, and restart REAPER.
@@ -166,3 +174,7 @@ ln -sfn "$(pwd)/models" ~/.config/REAPER/UserPlugins/reaper-stem-separation-plug
 ```
 
 </details>
+
+## License
+
+MIT License. See [LICENSE](LICENSE) for full license and third-party notices.

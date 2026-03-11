@@ -169,6 +169,7 @@ ifeq ($(UNAME_S),Linux)
 			ln -sf libonnxruntime.so.$$major libonnxruntime.so; \
 		done 2>/dev/null || true
 endif
+	cp LICENSE $(DIST_DIR)/
 	@printf '%s\n' \
 		"# reaper-stem-separation-plugin" \
 		"" \
@@ -185,7 +186,7 @@ endif
 		"" \
 		"## License" \
 		"" \
-		"MIT License. See https://github.com/kn0ll/reaper-stem-separation-plugin/blob/master/LICENSE" \
+		"MIT License. See LICENSE for full license and third-party notices." \
 		> $(DIST_DIR)/README.txt
 ifeq ($(ARCHIVE_FMT),tar.gz)
 	cd $(DIST_DIR) && tar czf ../$(DIST_NAME).tar.gz .
