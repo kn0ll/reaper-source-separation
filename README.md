@@ -2,7 +2,7 @@
 
 **Download:** [macOS](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-macos-arm64-cpu.tar.gz) | [Windows](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-windows-x64-cuda.zip) | [Linux](https://github.com/kn0ll/reaper-stem-separation-plugin/releases/latest/download/reaper-stem-separation-plugin-linux-x64-cuda.tar.gz)
 
-Select any audio item, click "Separate stems", and get individual tracks for vocals, drums, bass, guitar, piano, and more. Models download automatically on first use — no Python, no command line, just results.
+Right click any audio item, click "Separate stems", and get individual tracks for vocals, drums, bass, guitar, piano, and more. Ships with the best model for each job — BS-RoFormer for vocals, HTDemucs for full-mix splits — so you don't have to choose between quality and coverage. Models are automatically downloaded on first use.
 
 ## Development
 
