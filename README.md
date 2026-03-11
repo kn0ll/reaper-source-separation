@@ -88,8 +88,8 @@ sudo apt-get install cuda-toolkit-12 libcudnn9-cuda-12
 |-------|-------|-------|----------|
 | **Vocals (Best quality)** | [BS-RoFormer HyperACE](https://huggingface.co/pcunwa/BS-Roformer-HyperACE) | Vocals + Instrumental | Cleanest vocal isolation, highest fidelity |
 | **Vocals (Fast)** | [MelBand-RoFormer](https://huggingface.co/KimberleyJSN/melbandroformer) | Vocals + Instrumental | Quick vocal isolation, great for previewing |
-| **All Stems** | [HTDemucs](https://github.com/facebookresearch/demucs) | Drums, Bass, Other, Vocals | Full 4-stem separation, strong drum isolation |
-| **All Stems + Guitar & Piano** | [HTDemucs 6s](https://github.com/facebookresearch/demucs) | Drums, Bass, Other, Vocals, Guitar, Piano | Guitar and piano as separate stems |
+| **Vocals, Drums, Bass, Other** | [HTDemucs](https://github.com/facebookresearch/demucs) | Drums, Bass, Other, Vocals | Full 4-stem separation, strong drum isolation |
+| **Vocals, Drums, Bass, Other, Guitar, Piano** | [HTDemucs 6s](https://github.com/facebookresearch/demucs) | Drums, Bass, Other, Vocals, Guitar, Piano | Guitar and piano as separate stems |
 
 Models are downloaded automatically on first use, then cached `UserPlugins` for future use.
 

@@ -31,15 +31,6 @@ static DialogMode g_mode = DialogMode::Idle;
 static bool g_cancelling = false;
 static std::string g_pending_model_id;
 
-static void update_description(HWND hwnd) {
-    int sel = (int)SendDlgItemMessage(hwnd, IDC_MODEL, CB_GETCURSEL, 0, 0);
-    auto& models = model_manager::available_models();
-    if (sel >= 0 && sel < (int)models.size())
-        SetDlgItemText(hwnd, IDC_DESCRIPTION, models[sel].description.c_str());
-    else
-        SetDlgItemText(hwnd, IDC_DESCRIPTION, "");
-}
-
 static void populate_models(HWND combo) {
     SendMessage(combo, CB_RESETCONTENT, 0, 0);
     auto& models = model_manager::available_models();
@@ -97,7 +88,6 @@ static void update_ui(HWND hwnd) {
                 if (models[i].id == g_pending_model_id)
                     SendDlgItemMessage(hwnd, IDC_MODEL, CB_SETCURSEL, i, 0);
             }
-            update_description(hwnd);
             g_mode = DialogMode::Separating;
             std::string path = model_manager::model_path(g_pending_model_id);
             g_request.model_id = g_pending_model_id;
@@ -178,7 +168,6 @@ static INT_PTR WINAPI dialog_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
     switch (msg) {
     case WM_INITDIALOG:
         populate_models(GetDlgItem(hwnd, IDC_MODEL));
-        update_description(hwnd);
         SendDlgItemMessage(hwnd, IDC_PROGRESS, PBM_SETRANGE, 0, MAKELPARAM(0, 100));
         SendDlgItemMessage(hwnd, IDC_PROGRESS, PBM_SETPOS, 0, 0);
         EnableWindow(GetDlgItem(hwnd, IDC_CANCEL), FALSE);
@@ -186,10 +175,6 @@ static INT_PTR WINAPI dialog_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
 
     case WM_COMMAND:
         switch (LOWORD(wParam)) {
-        case IDC_MODEL:
-            if (HIWORD(wParam) == CBN_SELCHANGE)
-                update_description(hwnd);
-            break;
         case IDC_SEPARATE:
             start_separation(hwnd);
             return TRUE;

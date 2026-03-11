@@ -42,7 +42,7 @@ static const std::vector<model_manager::ModelInfo> g_known_models = {
     {
         "htdemucs",
         "htdemucs.ort",
-        "All Stems",
+        "Vocals, Drums, Bass, Other",
         "Split a track into its 4 core parts",
         {"drums", "bass", "other", "vocals"},
         model_manager::BackendType::Demucs,
@@ -53,7 +53,7 @@ static const std::vector<model_manager::ModelInfo> g_known_models = {
     {
         "htdemucs_6s",
         "htdemucs_6s.ort",
-        "All Stems + Guitar & Piano",
+        "Vocals, Drums, Bass, Other, Guitar, Piano",
         "Split a track into 6 parts including guitar and piano",
         {"drums", "bass", "other", "vocals", "guitar", "piano"},
         model_manager::BackendType::Demucs,
