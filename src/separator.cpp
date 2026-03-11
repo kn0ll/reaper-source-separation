@@ -109,7 +109,8 @@ static void worker(SeparationRequest req) {
 
         float duration = static_cast<float>(audio.cols()) / static_cast<float>(sample_rate);
         g_progress.store(0.10f);
-        char dur_buf[128];
+        static constexpr int kStatusBufLen = 128;
+        char dur_buf[kStatusBufLen];
         snprintf(dur_buf, sizeof(dur_buf), "Separating %.1fs of audio...", duration);
         set_status(dur_buf);
 

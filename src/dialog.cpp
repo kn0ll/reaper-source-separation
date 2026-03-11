@@ -26,6 +26,8 @@ static HINSTANCE g_hInst = nullptr;
 static HWND g_dialog = nullptr;
 static SeparationRequest g_request;
 
+static constexpr int kStatusBufLen = 512;
+
 enum class DialogMode { Idle, Downloading, Separating };
 static DialogMode g_mode = DialogMode::Idle;
 static bool g_cancelling = false;
@@ -66,6 +68,19 @@ static void reset_to_idle(HWND hwnd) {
     set_controls_enabled(hwnd, true);
 }
 
+static void force_close() {
+    if (g_mode == DialogMode::Downloading) {
+        model_manager::cancel_download();
+        plugin_register("-timer", (void*)timer_callback);
+    } else if (g_mode == DialogMode::Separating) {
+        separator::cancel();
+        plugin_register("-timer", (void*)timer_callback);
+    }
+    g_mode = DialogMode::Idle;
+    g_cancelling = false;
+    dialog::close();
+}
+
 static void update_ui(HWND hwnd) {
     if (g_mode == DialogMode::Downloading) {
         auto ds = model_manager::download_state();
@@ -73,7 +88,7 @@ static void update_ui(HWND hwnd) {
         if (!g_cancelling) {
             float prog = model_manager::download_progress();
             int pct = (int)(prog * 100.0f);
-            char buf[256];
+            char buf[kStatusBufLen];
             snprintf(buf, sizeof(buf), "[%d%%] Downloading model...", pct);
             SetDlgItemText(hwnd, IDC_STATUS, buf);
             SendDlgItemMessage(hwnd, IDC_PROGRESS, PBM_SETPOS, pct, 0);
@@ -111,7 +126,7 @@ static void update_ui(HWND hwnd) {
             float prog = separator::progress();
             std::string msg = separator::status_message();
             int pct = (int)(prog * 100.0f);
-            char status_buf[512];
+            char status_buf[kStatusBufLen];
             snprintf(status_buf, sizeof(status_buf), "[%d%%] %s", pct, msg.c_str());
             SetDlgItemText(hwnd, IDC_STATUS, status_buf);
             SendDlgItemMessage(hwnd, IDC_PROGRESS, PBM_SETPOS, pct, 0);
@@ -189,31 +204,13 @@ static INT_PTR WINAPI dialog_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM /*l
             SetDlgItemText(hwnd, IDC_STATUS, "Cancelling...");
             return TRUE;
         case IDCANCEL:
-            if (g_mode == DialogMode::Downloading) {
-                model_manager::cancel_download();
-                plugin_register("-timer", (void*)timer_callback);
-            } else if (g_mode == DialogMode::Separating) {
-                separator::cancel();
-                plugin_register("-timer", (void*)timer_callback);
-            }
-            g_mode = DialogMode::Idle;
-            g_cancelling = false;
-            dialog::close();
+            force_close();
             return TRUE;
         }
         break;
 
     case WM_CLOSE:
-        if (g_mode == DialogMode::Downloading) {
-            model_manager::cancel_download();
-            plugin_register("-timer", (void*)timer_callback);
-        } else if (g_mode == DialogMode::Separating) {
-            separator::cancel();
-            plugin_register("-timer", (void*)timer_callback);
-        }
-        g_mode = DialogMode::Idle;
-        g_cancelling = false;
-        dialog::close();
+        force_close();
         return TRUE;
     }
     return FALSE;

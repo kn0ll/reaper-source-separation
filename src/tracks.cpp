@@ -48,6 +48,7 @@ void tracks::create_from_result(const SeparationResult& result) {
     MediaTrack* folder = GetTrack(nullptr, insert_idx);
     if (folder) {
         std::string folder_name = parent_name + " - Stems";
+        // REAPER SDK requires non-const char* for set operations
         GetSetMediaTrackInfo_String(folder, "P_NAME",
             const_cast<char*>(folder_name.c_str()), true);
         SetMediaTrackInfo_Value(folder, "I_FOLDERDEPTH", 1);
@@ -65,6 +66,7 @@ void tracks::create_from_result(const SeparationResult& result) {
         if (!tr) { insert_idx++; continue; }
 
         std::string track_name = capitalize(stem.name);
+        // REAPER SDK requires non-const char* for set operations
         GetSetMediaTrackInfo_String(tr, "P_NAME",
             const_cast<char*>(track_name.c_str()), true);
 

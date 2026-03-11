@@ -12,16 +12,10 @@ public:
     void load(const std::string& model_path, bool use_gpu);
     Eigen::Tensor3dXf infer(const Eigen::MatrixXf& audio, ProgressCallback cb) override;
 
-    bool is_loaded() const { return loaded_; }
-    const std::string& loaded_path() const { return loaded_path_; }
-    bool loaded_with_gpu() const { return loaded_gpu_; }
     int num_sources() const { return model_.nb_sources; }
 
 private:
     demucsonnx::demucs_model model_;
-    std::string loaded_path_;
-    bool loaded_gpu_ = false;
-    bool loaded_ = false;
 };
 
 #endif

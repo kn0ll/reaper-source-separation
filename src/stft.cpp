@@ -6,6 +6,8 @@
 #include <numbers>
 #include <vector>
 
+static constexpr float kWindowSumEpsilon = 1e-8f;
+
 static Eigen::VectorXf hann_window(int size) {
     Eigen::VectorXf w(size);
     for (int i = 0; i < size; ++i)
@@ -102,7 +104,7 @@ Eigen::VectorXf istft(const Eigen::Tensor<float, 3>& spec, const STFTParams& par
 
     // Normalize by squared window sum (Griffin-Lim COLA)
     for (int i = 0; i < output_len; ++i) {
-        if (window_sum(i) > 1e-8f)
+        if (window_sum(i) > kWindowSumEpsilon)
             out(i) /= window_sum(i);
     }
 

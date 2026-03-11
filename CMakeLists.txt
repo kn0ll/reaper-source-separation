@@ -6,11 +6,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if(MSVC)
-    add_compile_options(/W4)
+    add_compile_options(/W4 /WX)
 else()
     # -ffast-math: intentional for audio DSP performance (relaxes IEEE 754 strictness)
     set(CMAKE_CXX_FLAGS_RELEASE "-O3 -ffast-math -flto -DNDEBUG")
-    add_compile_options(-Wall -Wextra -Wpedantic)
+    add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 endif()
 
 # -- Vendor paths --

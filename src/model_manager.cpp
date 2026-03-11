@@ -144,7 +144,13 @@ static void download_worker(std::string model_id) {
                     if (info->expected_bytes > 0)
                         g_dl_progress.store(static_cast<float>(sz) / static_cast<float>(info->expected_bytes));
                 }
-            } catch (...) {}
+            } catch (const std::exception& e) {
+                LOG("download monitor error: %s\n", e.what());
+                std::lock_guard<std::mutex> lk(g_dl_mutex);
+                g_dl_error = std::string("Download failed: ") + e.what();
+                g_dl_state.store(model_manager::DownloadState::Error);
+                break;
+            }
         }
     });
 

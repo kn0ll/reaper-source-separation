@@ -61,7 +61,8 @@ static void on_command() {
         return;
     }
 
-    char filename[4096] = {};
+    static constexpr int kMaxPathLen = 4096;
+    char filename[kMaxPathLen] = {};
     GetMediaSourceFileName(source, filename, sizeof(filename));
     if (filename[0] == '\0') {
         ShowMessageBox("Selected item has no source file (e.g. MIDI).", "Separate Stems", 0);

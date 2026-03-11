@@ -20,17 +20,10 @@ public:
     void load(const std::string& model_path, bool use_gpu, const Config& config);
     Eigen::Tensor3dXf infer(const Eigen::MatrixXf& audio, ProgressCallback cb) override;
 
-    bool is_loaded() const { return loaded_; }
-    const std::string& loaded_path() const { return loaded_path_; }
-    bool loaded_with_gpu() const { return loaded_gpu_; }
-
 private:
     Ort::Env env_{ORT_LOGGING_LEVEL_ERROR, "roformer"};
     std::unique_ptr<Ort::Session> session_;
     Config config_;
-    std::string loaded_path_;
-    bool loaded_gpu_ = false;
-    bool loaded_ = false;
 
     Eigen::Tensor3dXf run_inference(const Eigen::MatrixXf& audio, ProgressCallback cb);
 };
