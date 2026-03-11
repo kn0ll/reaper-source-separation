@@ -55,7 +55,7 @@ std::vector<StemResult> audio_io::write_stems(
 {
     fs::create_directories(output_dir);
     std::vector<StemResult> results;
-    long num_samples = targets.dimension(2);
+    long num_samples = static_cast<long>(targets.dimension(2));
     int nb_sources = static_cast<int>(targets.dimension(0));
 
     for (int t = 0; t < nb_sources && t < static_cast<int>(stem_names.size()); ++t) {

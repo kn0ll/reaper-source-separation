@@ -69,8 +69,8 @@ Eigen::VectorXf istft(const Eigen::Tensor<float, 3>& spec, const STFTParams& par
     const int n_fft = params.n_fft;
     const int hop = params.hop_length;
     const int win_len = params.win_length;
-    const int freq_bins = spec.dimension(0);
-    const int time_frames = spec.dimension(1);
+    const int freq_bins = static_cast<int>(spec.dimension(0));
+    const int time_frames = static_cast<int>(spec.dimension(1));
     const int pad = n_fft / 2;
 
     auto window = hann_window(win_len);

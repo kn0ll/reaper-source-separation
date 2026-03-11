@@ -119,7 +119,7 @@ Eigen::Tensor3dXf RoFormerBackend::run_inference(const Eigen::MatrixXf& audio, P
         Eigen::VectorXf ch1 = chunk.row(1);
         auto spec0 = stft(ch0, config_.stft);
         auto spec1 = stft(ch1, config_.stft);
-        int time_frames = spec0.dimension(1);
+        int time_frames = static_cast<int>(spec0.dimension(1));
 
         // Build ONNX input: (batch=1, channels=2, freq_bins, time_frames, 2)
         size_t input_elems = static_cast<size_t>(2) * freq_bins * time_frames * 2;
