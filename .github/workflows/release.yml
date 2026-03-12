@@ -138,6 +138,12 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
+          pattern: reaper_stem_separation_plugin.*
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: models
 
       - name: Upload plugin binaries
         env:
