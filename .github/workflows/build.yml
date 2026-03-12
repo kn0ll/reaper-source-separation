@@ -110,6 +110,19 @@ jobs:
           name: ${{ matrix.platform }}
           path: build/${{ matrix.plugin }}
 
+  devcontainer:
+    runs-on: ubuntu-22.04
+    name: Devcontainer
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: devcontainers/ci@v0.3
+        with:
+          runCmd: make plugin
+
   models:
     runs-on: ubuntu-22.04
     name: Convert models
