@@ -38,6 +38,7 @@ struct OrtStubInit {
 };
 
 #ifdef _MSC_VER
+#pragma warning(suppress : 4073)
 #pragma init_seg(lib)
 static OrtStubInit g_ort_stub_init;
 #else
